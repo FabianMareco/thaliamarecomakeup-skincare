@@ -7,7 +7,11 @@ import { env } from "./env";
 // Firebase Admin SDK. Único punto de acceso a Firestore, Auth y Storage.
 
 let app: App | undefined;
-let firestore: Firestore | undefined;
+
+// Next puede cargar este módulo en más de un bundle del servidor; la instancia
+// de Firestore (y su configuración, que solo se puede fijar una vez) se
+// comparte por proceso.
+const g = globalThis as typeof globalThis & { __thaliaFirestore?: Firestore };
 
 function adminApp(): App {
   if (app) return app;
@@ -25,9 +29,10 @@ function adminApp(): App {
 }
 
 export function db(): Firestore {
-  if (firestore) return firestore;
-  firestore = getFirestore(adminApp());
+  if (g.__thaliaFirestore) return g.__thaliaFirestore;
+  const firestore = getFirestore(adminApp());
   firestore.settings({ ignoreUndefinedProperties: true });
+  g.__thaliaFirestore = firestore;
   return firestore;
 }
 

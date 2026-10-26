@@ -100,6 +100,7 @@ export type ManageView = PaymentView & {
   options: ClientOptions;
   refundDeadline?: Date;
   cancellationWindowHours: number;
+  bookingHorizonDays: number;
   /** Dirección exacta: solo para reservas confirmadas de skincare presencial o maquillaje en estudio. */
   address?: string;
 };
@@ -117,6 +118,7 @@ export async function getManageView(token: string, now = new Date()): Promise<Ma
     options: clientOptions(b, now, tenant.skincare),
     refundDeadline: b.startAt && b.line === "skincare" ? refundDeadline(b.startAt, tenant.skincare.cancellationWindowHours) : undefined,
     cancellationWindowHours: tenant.skincare.cancellationWindowHours,
+    bookingHorizonDays: tenant.skincare.bookingHorizonDays,
     address: showAddress ? tenant.privateAddress || undefined : undefined,
   };
 }
