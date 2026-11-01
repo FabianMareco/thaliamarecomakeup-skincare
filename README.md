@@ -2,7 +2,7 @@
 
 Sistema de reservas: las clientas reservan tratamientos faciales o solicitan fecha de maquillaje, transfieren la seña y suben el comprobante; Thalia verifica y gestiona todo desde un panel pensado para el celular.
 
-**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Firebase (Firestore, Storage, Auth) con Admin SDK · Resend · WhatsApp Cloud API · date-fns + @date-fns/tz.
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Firebase (Firestore, Auth y, opcionalmente, Storage) con Admin SDK · Resend · WhatsApp Cloud API · date-fns + @date-fns/tz.
 
 ## Rutas
 
@@ -52,8 +52,8 @@ npm run lint && npm run typecheck
 
 ## Producción
 
-1. Proyecto de Firebase con Firestore, Storage y Auth (proveedor email/contraseña). Publicar reglas: `npx firebase deploy --only firestore:rules,storage`.
-2. Cuenta de servicio → `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FIREBASE_STORAGE_BUCKET`.
+1. Proyecto de Firebase con Firestore y Auth (proveedor email/contraseña). Funciona en el plan gratis (Spark). Publicar reglas: `npx firebase deploy --only firestore:rules --project <id>`.
+2. Cuenta de servicio → `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`.
 3. Variables de `.env.example` en Vercel, más **`LINK_SECRET`** (cadena aleatoria larga; ver abajo).
 4. Resend con el dominio `thaliamarecomakeup.com.ar` verificado → `RESEND_API_KEY`.
 5. `npm run seed` apuntando a producción (con `SEED_PRIVATE_ADDRESS` y `SEED_NOTIFICATION_EMAIL`) y `npm run create-admin`.
@@ -65,5 +65,9 @@ npm run lint && npm run typecheck
 ### Notas técnicas
 
 - **Links de pago/gestión:** el token es un valor de 32 bytes base64url derivado con HMAC (`LINK_SECRET`) del id de la reserva. En la base solo se guarda su hash SHA-256, y el servidor puede volver a armar el link en cada recordatorio. Cambiar `LINK_SECRET` invalida los links ya enviados.
-- **Comprobantes:** el archivo pasa por el servidor, que valida el tipo real (JPG/PNG/WEBP/PDF) y el tamaño (5 MB). Vercel limita el cuerpo de una request a ~4,5 MB, por eso el navegador achica antes las fotos grandes. Thalia los ve con una URL firmada de 5 minutos.
+- **Comprobantes:** el archivo pasa por el servidor, que valida el tipo real (JPG/PNG/WEBP/PDF) y el tamaño (5 MB). Vercel limita el cuerpo de una request a ~4,5 MB, por eso el navegador achica antes las fotos grandes. Thalia los ve desde el panel, siempre con sesión.
+- **Dónde se guardan los comprobantes** (`RECEIPT_STORAGE`, ver `src/server/receiptStore.ts`):
+  - `firestore` (por defecto): dentro de Firestore, partidos en pedazos de menos de 1 MB. No requiere el plan Blaze.
+  - `storage`: Firebase Storage (requiere plan Blaze). Para cambiar: pasar a Blaze, crear el bucket, publicar `npx firebase deploy --only storage`, y definir `RECEIPT_STORAGE=storage` y `FIREBASE_STORAGE_BUCKET`. Thalia los ve con una URL firmada de 5 minutos.
+  - Cada comprobante guarda dónde quedó, así que al cambiar de opción los anteriores se siguen viendo.
 - **Recordatorios:** el cron "reclama" cada recordatorio en una transacción antes de enviarlo, así ejecuciones solapadas no duplican. Si fallan todos los canales, libera el reclamo para reintentar.

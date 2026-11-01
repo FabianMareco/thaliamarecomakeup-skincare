@@ -1,13 +1,13 @@
 import { validateReceipt } from "@/lib/domain/receipts";
 import type { Booking, Receipt } from "@/lib/domain/types";
 import { payerNameSchema } from "@/lib/schemas";
-import { env } from "../env";
 import { UserError } from "../errors";
-import { bucket, db } from "../firebase";
+import { db } from "../firebase";
 import { notify } from "../notify/notify";
 import { paymentMethodFor } from "../payments";
 import { findBookingByToken, slotRef, txGetBooking, txGetSlot, txSetBooking } from "../repo/bookings";
 import { loadTenant } from "../repo/tenant";
+import { deleteReceipt, saveReceipt } from "../receiptStore";
 import { requireBooking } from "./common";
 
 // Sección 10.1: carga del comprobante por la clienta.
@@ -15,17 +15,12 @@ import { requireBooking } from "./common";
 export async function storeReceiptFile(bookingId: string, bytes: Uint8Array, now: Date) {
   const check = validateReceipt(bytes);
   if (!check.ok) throw new UserError(check.error);
-  const path = `receipts/${env.tenantId}/${bookingId}/${now.getTime()}.${check.kind.ext}`;
-  await bucket().file(path).save(Buffer.from(bytes), {
-    contentType: check.kind.contentType,
-    resumable: false,
-    metadata: { cacheControl: "private, no-store" },
-  });
+  const path = await saveReceipt({ bookingId, bytes, contentType: check.kind.contentType, ext: check.kind.ext, now });
   return { path, contentType: check.kind.contentType };
 }
 
 export async function deleteReceiptFile(path: string): Promise<void> {
-  await bucket().file(path).delete({ ignoreNotFound: true }).catch(() => undefined);
+  await deleteReceipt(path).catch(() => undefined);
 }
 
 function assertUploadOpen(b: Booking, now: Date): void {
@@ -81,16 +76,4 @@ export async function uploadReceipt(
     notify("admin_receipt_submitted", updated, { tenant }),
   ]);
   return updated;
-}
-
-/** URL firmada de corta duración para que Thalia vea un comprobante. */
-export async function receiptViewUrl(path: string): Promise<string | null> {
-  if (env.usingEmulators) return null; // el emulador no firma URLs: se usa el proxy autenticado
-  try {
-    const [url] = await bucket().file(path).getSignedUrl({ action: "read", expires: Date.now() + 5 * 60_000, version: "v4" });
-    return url;
-  } catch (e) {
-    console.error("[receipts] no se pudo firmar la URL", e);
-    return null;
-  }
 }

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAdmin } from "@/server/auth";
-import { bucket } from "@/server/firebase";
-import { receiptViewUrl } from "@/server/flows/receipts";
+import { readReceipt, receiptSignedUrl } from "@/server/receiptStore";
 import { getBooking } from "@/server/repo/bookings";
 
 // Ver un comprobante desde el panel. Solo con sesión de administradora:
-// redirige a una URL firmada de 5 minutos o, si no se puede firmar (por
-// ejemplo, con el emulador), sirve el archivo directamente.
+// si el archivo está en Storage redirige a una URL firmada de 5 minutos; si
+// está en Firestore (o no se puede firmar), sirve el archivo directamente.
 export async function GET(req: Request) {
   if (!(await getAdmin())) return new NextResponse("No autorizado", { status: 401 });
   const url = new URL(req.url);
@@ -16,10 +15,10 @@ export async function GET(req: Request) {
   const receipt = booking?.deposit.receipts[index];
   if (!receipt?.path) return new NextResponse("No encontrado", { status: 404 });
 
-  const signed = await receiptViewUrl(receipt.path);
+  const signed = await receiptSignedUrl(receipt.path);
   if (signed) return NextResponse.redirect(signed, { status: 302, headers: { "Cache-Control": "private, no-store" } });
 
-  const [bytes] = await bucket().file(receipt.path).download();
+  const bytes = await readReceipt(receipt.path);
   return new NextResponse(new Uint8Array(bytes), {
     headers: {
       "Content-Type": receipt.contentType ?? "application/octet-stream",

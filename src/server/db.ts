@@ -15,6 +15,7 @@ export const cols = {
   clients: () => tenantRef().collection("clients"),
   notifications: () => tenantRef().collection("notifications"),
   rateLimits: () => tenantRef().collection("rateLimits"),
+  receiptFiles: () => tenantRef().collection("receiptFiles"),
 };
 
 /** Convierte recursivamente los Timestamp de Firestore en Date. */

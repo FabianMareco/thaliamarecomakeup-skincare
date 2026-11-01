@@ -31,6 +31,10 @@ export const env = {
   get storageBucket() {
     return opt("FIREBASE_STORAGE_BUCKET");
   },
+  /** Dónde se guardan los comprobantes nuevos: "firestore" (plan Spark) o "storage" (Firebase Storage, plan Blaze). */
+  get receiptStorage(): "firestore" | "storage" {
+    return opt("RECEIPT_STORAGE") === "storage" ? "storage" : "firestore";
+  },
   get resendApiKey() {
     return opt("RESEND_API_KEY");
   },

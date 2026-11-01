@@ -5,6 +5,7 @@ import { arLocalToInstant } from "@/lib/domain/time";
 import { env } from "../env";
 import { bucket } from "../firebase";
 import { manageTokenFor } from "../links";
+import { deleteReceipt, readReceipt } from "../receiptStore";
 import { getBooking, getClient, getSlot } from "../repo/bookings";
 import { JPG, putSlot, setupTenant, type Sent } from "../test-helpers";
 import { getManageView, getPaymentView } from "../views";
@@ -172,20 +173,52 @@ describe("Fase 3 — reserva skincare y pago por transferencia", () => {
     expect((await getBooking(bookingId))!.status).toBe("awaiting_payment");
   });
 
-  it("un comprobante solo es visible para Thalia, nunca por URL pública", async () => {
+  it("un comprobante solo es visible para Thalia, nunca por URL pública (Firestore, plan Spark)", async () => {
     const { bookingId } = await bookFuture();
     const b = await uploadReceipt(manageTokenFor(bookingId), JPG, "Clienta Uno", NOW);
-    const path = b.deposit.receipts[0].path;
-    expect(path).toMatch(new RegExp(`^receipts/${env.tenantId}/${bookingId}/\\d+\\.jpg$`));
-    const [exists] = await bucket().file(path).exists();
-    expect(exists).toBe(true);
-    // Sin credenciales de administrador, las reglas de Storage niegan la lectura.
-    const url = `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}/v0/b/${bucket().name}/o/${encodeURIComponent(path)}?alt=media`;
-    const res = await fetch(url);
-    expect(res.status).toBe(403);
-    // La vista pública de la reserva no expone rutas de comprobantes.
+    const ref = b.deposit.receipts[0].path;
+    expect(ref).toMatch(/^firestore:[A-Za-z0-9]+$/);
+    expect(await readReceipt(ref)).toEqual(JPG);
+    // Sin credenciales de administrador, las reglas de Firestore niegan la lectura.
+    const docPath = `projects/${process.env.FIREBASE_PROJECT_ID}/databases/(default)/documents/tenants/${env.tenantId}/receiptFiles/${ref.slice(10)}`;
+    expect((await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/v1/${docPath}`)).status).toBe(403);
+    expect((await fetch(`http://${process.env.FIRESTORE_EMULATOR_HOST}/v1/${docPath}/chunks/0`)).status).toBe(403);
+    // La vista pública de la reserva no expone referencias de comprobantes.
     const view = await getPaymentView(manageTokenFor(bookingId), NOW);
-    expect(JSON.stringify(view)).not.toContain("receipts/");
+    expect(JSON.stringify(view)).not.toContain(ref);
+  });
+
+  it("guarda archivos de hasta 5 MB partidos en pedazos y los recupera intactos", async () => {
+    const { bookingId } = await bookFuture();
+    const big = new Uint8Array(5 * 1024 * 1024);
+    for (let i = 0; i < big.length; i++) big[i] = (i * 31) % 251;
+    big.set([0x25, 0x50, 0x44, 0x46, 0x2d]); // "%PDF-"
+    const b = await uploadReceipt(manageTokenFor(bookingId), big, "Clienta Uno", NOW);
+    const ref = b.deposit.receipts[0].path;
+    const back = await readReceipt(ref);
+    expect(back.length).toBe(big.length);
+    expect(Buffer.from(back).equals(Buffer.from(big))).toBe(true);
+    await deleteReceipt(ref);
+    await expect(readReceipt(ref)).rejects.toThrow(/inexistente/);
+  });
+
+  it("con RECEIPT_STORAGE=storage usa Firebase Storage, privado, y los comprobantes anteriores se siguen leyendo", async () => {
+    const first = await bookFuture(1, "09:00");
+    const old = (await uploadReceipt(manageTokenFor(first.bookingId), JPG, "Clienta Uno", NOW)).deposit.receipts[0].path;
+    process.env.RECEIPT_STORAGE = "storage";
+    try {
+      const second = await bookFuture(2, "11:00");
+      const path = (await uploadReceipt(manageTokenFor(second.bookingId), JPG, "Clienta Dos", NOW)).deposit.receipts[0].path;
+      expect(path).toMatch(new RegExp(`^receipts/${env.tenantId}/${second.bookingId}/\\d+\\.jpg$`));
+      expect(await readReceipt(path)).toEqual(JPG);
+      // Sin credenciales de administrador, las reglas de Storage niegan la lectura.
+      const url = `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}/v0/b/${bucket().name}/o/${encodeURIComponent(path)}?alt=media`;
+      expect((await fetch(url)).status).toBe(403);
+      // El comprobante guardado antes en Firestore se sigue leyendo.
+      expect(await readReceipt(old)).toEqual(JPG);
+    } finally {
+      delete process.env.RECEIPT_STORAGE;
+    }
   });
 
   it("máximo 1 reserva esperando pago por teléfono", async () => {
