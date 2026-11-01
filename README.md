@@ -62,6 +62,18 @@ npm run lint && npm run typecheck
    - Programador externo (ej. cron-job.org): `GET https://<dominio>/api/cron/tick` con header `Authorization: Bearer <CRON_SECRET>`.
 7. WhatsApp: mientras Meta no apruebe el número y las plantillas, dejar `WHATSAPP_MODE=disabled` (solo se registra en el log; los emails incluyen botón de WhatsApp). Las plantillas a dar de alta (Utility, `es_AR`) están en `src/config/whatsapp-templates.ts` con su texto de referencia.
 
+### Copias de seguridad
+
+Las copias automáticas de Firestore requieren el plan Blaze. Mientras tanto hay una copia manual gratuita:
+
+```bash
+npm run backup                                   # guarda todo en backups/backup-<tenant>-<fecha>.json
+npm run restore -- backups/<archivo>.json        # restaura (solo si la base está vacía)
+npm run restore -- backups/<archivo>.json --force  # pisa los documentos que están en la copia
+```
+
+La copia incluye configuración, servicios, horarios, reservas, clientas, avisos y comprobantes. Tiene datos personales: guardala en un lugar privado (la carpeta `backups/` no se sube a git).
+
 ### Notas técnicas
 
 - **Links de pago/gestión:** el token es un valor de 32 bytes base64url derivado con HMAC (`LINK_SECRET`) del id de la reserva. En la base solo se guarda su hash SHA-256, y el servidor puede volver a armar el link en cada recordatorio. Cambiar `LINK_SECRET` invalida los links ya enviados.
