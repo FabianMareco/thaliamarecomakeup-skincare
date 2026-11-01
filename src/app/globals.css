@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+/* Paleta: crema, nude y terracota suave. */
+@theme inline {
+  --color-cream: #faf6f3;
+  --color-sand: #f1e7e1;
+  --color-blush: #e9d6cc;
+  --color-ink: #3b2f2f;
+  --color-muted: #7a6a64;
+  --color-accent: #8a5a4a;
+  --color-accent-dark: #6f4637;
+  --color-line: #e6d9d1;
+  --font-sans: var(--font-sans-base);
+  --font-display: var(--font-display-base);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
