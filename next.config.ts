@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     },
   },
   serverExternalPackages: ["firebase-admin"],
+  // Las imágenes del panel leen las fuentes desde assets/fonts en tiempo de ejecución.
+  outputFileTracingIncludes: {
+    "/api/panel/imagen/*": ["./assets/fonts/*.woff"],
+  },
 };
 
 export default nextConfig;

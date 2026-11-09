@@ -10,7 +10,7 @@ import {
   refundDeadline,
 } from "./availability";
 import { balanceFor, bookingTotal, listPrice, makeupDeposit, skincareDeposit } from "./money";
-import { normalizePhone } from "./phone";
+import { displayPhone, normalizePhone } from "./phone";
 import { validateReceipt, MAX_RECEIPT_BYTES } from "./receipts";
 import { dueReminderOffsets, offsetsToMarkSent } from "./reminders";
 import { copyWeek, generateFromTemplate, newOpenSlot, overlaps, validateTemplate } from "./slots";
@@ -301,6 +301,11 @@ describe("teléfonos", () => {
     ["+598 99 123 456", "+59899123456"],
   ])("%s → %s", (input, out) => {
     expect(normalizePhone(input)).toBe(out);
+  });
+  it("muestra los teléfonos en formato legible", () => {
+    expect(displayPhone("+5491161234567")).toBe("11 6123-4567");
+    expect(displayPhone("+5492214123456")).toBe("221 412-3456");
+    expect(displayPhone("+59899123456")).toBe("+59899123456");
   });
   it("rechaza números inválidos", () => {
     expect(normalizePhone("1234")).toBeNull();

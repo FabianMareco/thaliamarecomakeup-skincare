@@ -102,11 +102,18 @@ export default async function AgendaPage(props: PageProps<"/panel/agenda">) {
           const list = items.get(d) ?? [];
           return (
             <section key={d} className="space-y-2">
-              <h2 className={cx("text-sm font-medium first-letter:uppercase", d === today && "text-accent")}>
-                <Link href={`/panel/horarios?date=${d}`} className="hover:underline">
-                  {fmtDateStrLong(d)}
-                </Link>
-              </h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className={cx("text-sm font-medium first-letter:uppercase", d === today && "text-accent")}>
+                  <Link href={`/panel/horarios?date=${d}`} className="hover:underline">
+                    {fmtDateStrLong(d)}
+                  </Link>
+                </h2>
+                {list.some((i) => i.kind !== "slot" || i.booking) && (
+                  <a href={`/api/panel/imagen/agenda?date=${d}`} download={`agenda-${d}.png`} className="shrink-0 text-xs text-accent underline">
+                    Descargar imagen del día
+                  </a>
+                )}
+              </div>
               {list.length === 0 ? (
                 <p className="text-sm text-muted">Sin horarios ni eventos.</p>
               ) : (

@@ -5,6 +5,7 @@ import { listBookingsBetween, listSlotsBetween } from "@/server/repo/bookings";
 import { listServices } from "@/server/repo/services";
 import { getTenant } from "@/server/repo/tenant";
 import { DateJump, DayEditor, GeneratePanel, TemplateEditor } from "./ScheduleEditors";
+import { ShareImage } from "./ShareImage";
 
 export const metadata = { title: "Horarios" };
 
@@ -61,6 +62,20 @@ export default async function HorariosPage(props: PageProps<"/panel/horarios">) 
             serviceName: s.bookingId ? bookingById.get(s.bookingId)?.service.name : undefined,
           }))}
           services={services.map((sv) => ({ id: sv.id, name: sv.name, price: sv.price, durationMin: sv.durationMin, active: sv.active }))}
+        />
+      </Card>
+
+      <Card className="space-y-4">
+        <div>
+          <h2 className="font-medium">Imagen para redes</h2>
+          <p className="text-sm text-muted">Una placa con tus turnos libres, lista para publicar en historias o en el feed.</p>
+        </div>
+        <ShareImage
+          ranges={[
+            { label: "Esta semana", from: today, to: addDaysStr(thisMonday, 6) },
+            { label: "Próxima semana", from: addDaysStr(thisMonday, 7), to: addDaysStr(thisMonday, 13) },
+            { label: `Solo el ${Number(date.slice(8))}/${Number(date.slice(5, 7))}`, from: date, to: date },
+          ]}
         />
       </Card>
 

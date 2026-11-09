@@ -62,6 +62,13 @@ npm run lint && npm run typecheck
    - Programador externo (ej. cron-job.org): `GET https://<dominio>/api/cron/tick` con header `Authorization: Bearer <CRON_SECRET>`.
 7. WhatsApp: mientras Meta no apruebe el número y las plantillas, dejar `WHATSAPP_MODE=disabled` (solo se registra en el log; los emails incluyen botón de WhatsApp). La guía completa y las plantillas a dar de alta (Utility, `es_AR`) están en [`docs/whatsapp.md`](docs/whatsapp.md).
 
+### Imágenes del panel
+
+- **Turnos libres para redes** (Horarios → "Imagen para redes"): historia 9:16 o post 4:5, con los horarios que siguen libres.
+- **Agenda del día** (Agenda → "Descargar imagen del día"): turnos con datos de las pacientes, seña y saldo a cobrar. Uso interno.
+
+Se generan en `/api/panel/imagen/*` (solo con sesión del panel) usando las fuentes de `assets/fonts`.
+
 ### Copias de seguridad
 
 Las copias automáticas de Firestore requieren el plan Blaze. Mientras tanto hay una copia manual gratuita:

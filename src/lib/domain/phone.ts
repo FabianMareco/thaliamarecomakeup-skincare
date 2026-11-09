@@ -31,6 +31,17 @@ export function normalizePhone(input: string): string | null {
   return `+549${national}`;
 }
 
+/** Teléfono legible: "+5491161234567" → "11 6123-4567"; otros países quedan como están. */
+export function displayPhone(e164: string): string {
+  const m = /^\+549(\d{10})$/.exec(e164);
+  if (!m) return e164;
+  const n = m[1];
+  // Buenos Aires (11) tiene código de área de 2 dígitos; el resto del país, en general, de 3 o 4.
+  const area = n.startsWith("11") ? 2 : n.startsWith("2") || n.startsWith("3") ? 3 : 2;
+  const local = n.slice(area);
+  return `${n.slice(0, area)} ${local.slice(0, local.length - 4)}-${local.slice(-4)}`;
+}
+
 /** Número para links wa.me (solo dígitos). */
 export function waDigits(e164: string): string {
   return e164.replace(/\D/g, "");
