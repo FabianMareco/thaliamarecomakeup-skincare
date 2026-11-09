@@ -1,7 +1,9 @@
 import { Countdown } from "@/components/client-bits";
 import { Alert, Badge, Card, Row } from "@/components/ui";
 import { fmtDateTimeShort } from "@/lib/domain/time";
-import { pendingLists } from "@/server/panel";
+import { manualMessages } from "@/server/notify/manual";
+import { pendingLists, upcomingConfirmed } from "@/server/panel";
+import { getTenant } from "@/server/repo/tenant";
 import { ReceiptActions, RefundDoneButton, SameDayActions } from "../_components/actions";
 import { BookingRow, money, ReceiptPreview, whenShort } from "../_components/bits";
 
@@ -19,7 +21,7 @@ function Section({ title, count, children }: { title: string; count: number; chi
 }
 
 export default async function PendientesPage() {
-  const l = await pendingLists();
+  const [l, upcoming, tenant] = await Promise.all([pendingLists(), upcomingConfirmed(48), getTenant()]);
   return (
     <div className="space-y-10">
       <Section title="Comprobantes por verificar" count={l.receipts.length}>
@@ -92,6 +94,31 @@ export default async function PendientesPage() {
           ))}
         </div>
       </Section>
+
+      {upcoming.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-xl">Turnos de las próximas 48 hs</h2>
+          <p className="text-sm text-muted">Si querés, mandales el recordatorio por WhatsApp.</p>
+          {upcoming.map((b) => {
+            const reminder = manualMessages(b, tenant).find((m) => m.event === "reminder");
+            return (
+              <div key={b.id} className="space-y-2">
+                <BookingRow b={b} />
+                {reminder && (
+                  <a
+                    href={reminder.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-10 items-center rounded-full bg-[#1f8f4e] px-4 text-sm font-medium text-white hover:bg-[#187a42]"
+                  >
+                    Recordatorio por WhatsApp a {b.client.name.split(" ")[0]}
+                  </a>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      )}
 
       {l.unpaidManual.length > 0 && (
         <section className="space-y-3">

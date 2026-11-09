@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import { Resend } from "resend";
 import { env } from "../env";
 
@@ -28,10 +29,29 @@ class ResendEmail implements EmailProvider {
   }
 }
 
+/** Envío por SMTP; por ejemplo, una cuenta de Gmail con contraseña de aplicación. */
+class SmtpEmail implements EmailProvider {
+  constructor(private cfg: { host: string; port: number; user: string; pass: string }) {}
+  async send(msg: { to: string; subject: string; html: string; text: string }): Promise<SendResult> {
+    try {
+      const transport = nodemailer.createTransport({
+        host: this.cfg.host,
+        port: this.cfg.port,
+        secure: this.cfg.port === 465,
+        auth: { user: this.cfg.user, pass: this.cfg.pass },
+      });
+      const info = await transport.sendMail({ from: env.emailFrom, ...msg });
+      return { status: "sent", id: info.messageId };
+    } catch (e) {
+      return { status: "failed", error: (e as Error).message };
+    }
+  }
+}
+
 class LogEmail implements EmailProvider {
   async send(msg: { to: string; subject: string }): Promise<SendResult> {
     if (process.env.NODE_ENV !== "test") console.info(`[email:disabled] → ${msg.to}: ${msg.subject}`);
-    return { status: "skipped", error: "RESEND_API_KEY no configurada" };
+    return { status: "skipped", error: "Email no configurado (RESEND_API_KEY o SMTP_USER/SMTP_PASS)" };
   }
 }
 
@@ -75,7 +95,10 @@ class DisabledWhatsApp implements WhatsAppProvider {
 
 export function emailProvider(): EmailProvider {
   const key = env.resendApiKey;
-  return key ? new ResendEmail(key) : new LogEmail();
+  if (key) return new ResendEmail(key);
+  const smtp = env.smtp;
+  if (smtp) return new SmtpEmail(smtp);
+  return new LogEmail();
 }
 
 export function whatsappProvider(): WhatsAppProvider {

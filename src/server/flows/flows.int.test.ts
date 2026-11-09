@@ -496,3 +496,28 @@ describe("Reservas cargadas por Thalia", () => {
     await expect(createAdminBooking({ ...base, depositPaid: true }, NOW)).rejects.toThrow(/Elegí un horario/);
   });
 });
+
+describe("WhatsApp manual desde el panel", () => {
+  it("arma los mensajes según el estado, con el texto completo y el número de la clienta", async () => {
+    const { manualMessages } = await import("../notify/manual");
+    const { loadTenant } = await import("../repo/tenant");
+    const tenant = await loadTenant();
+    const { bookingId } = await bookFuture(1, "09:00", "2026-11-10");
+    const pending = manualMessages((await getBooking(bookingId))!, tenant, NOW);
+    expect(pending.map((m) => m.event)).toEqual(["payment_link_created"]);
+    const text = decodeURIComponent(pending[0].url.split("?text=")[1]);
+    expect(pending[0].url).toMatch(/^https:\/\/wa\.me\/5491150000001\?text=/);
+    expect(text).toContain("$20.000");
+    expect(text).toContain("/turnos/pago/");
+    expect(text).not.toMatch(/\{\{\d\}\}/);
+
+    await confirmDepositManually(bookingId, {}, NOW);
+    const confirmed = manualMessages((await getBooking(bookingId))!, tenant, NOW);
+    expect(confirmed.map((m) => m.event)).toEqual(["confirmed", "reminder"]);
+    for (const m of confirmed) expect(decodeURIComponent(m.url)).not.toMatch(/\{\{\d\}\}/);
+    // A más de 48 hs el recordatorio habla del plazo para cancelar; cerca del turno, de la dirección.
+    expect(decodeURIComponent(confirmed[1].url)).toContain("reprogramar o cancelar con reintegro");
+    const near = manualMessages((await getBooking(bookingId))!, tenant, arLocalToInstant("2026-11-09", "12:00"));
+    expect(decodeURIComponent(near.find((m) => m.event === "reminder")!.url)).toContain("Calle Falsa 123");
+  });
+});

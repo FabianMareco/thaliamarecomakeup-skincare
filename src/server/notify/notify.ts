@@ -43,9 +43,8 @@ export async function notify(event: NotifyEvent, booking: Booking, opts: NotifyO
   }
 }
 
-async function dispatch(event: NotifyEvent, booking: Booking, opts: NotifyOptions): Promise<NotifyResult> {
-  const tenant = opts.tenant ?? (await loadTenant());
-  const ctx: MessageCtx = {
+export function buildMessageCtx(booking: Booking, tenant: Tenant, opts: Omit<NotifyOptions, "tenant"> = {}): MessageCtx {
+  return {
     tenant,
     booking,
     links: { payment: paymentUrl(booking.id), manage: manageUrl(booking.id), panel: panelBookingUrl(booking.id) },
@@ -53,6 +52,11 @@ async function dispatch(event: NotifyEvent, booking: Booking, opts: NotifyOption
     reason: opts.reason,
     previousWhen: opts.previousWhen,
   };
+}
+
+async function dispatch(event: NotifyEvent, booking: Booking, opts: NotifyOptions): Promise<NotifyResult> {
+  const tenant = opts.tenant ?? (await loadTenant());
+  const ctx = buildMessageCtx(booking, tenant, opts);
   const email = overrides.email ?? emailProvider();
   const whatsapp = overrides.whatsapp ?? whatsappProvider();
 

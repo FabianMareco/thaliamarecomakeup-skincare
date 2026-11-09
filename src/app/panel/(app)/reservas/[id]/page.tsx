@@ -5,6 +5,7 @@ import { Alert, Badge, Card, Row } from "@/components/ui";
 import { fmtDateStrLong, fmtDateTimeShort } from "@/lib/domain/time";
 import { DEPOSIT_LABEL, STATUS_LABEL } from "@/lib/domain/transitions";
 import { manageUrl, paymentUrl } from "@/server/links";
+import { manualMessages } from "@/server/notify/manual";
 import { getBooking } from "@/server/repo/bookings";
 import { getService } from "@/server/repo/services";
 import { getTenant } from "@/server/repo/tenant";
@@ -20,6 +21,7 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
   if (!b) notFound();
   const [service, tenant] = await Promise.all([b.line === "makeup" ? getService(b.service.id) : null, getTenant()]);
   const active = ["awaiting_payment", "awaiting_verification", "confirmed"].includes(b.status);
+  const messages = manualMessages(b, tenant);
   const actor = { client: "Clienta", admin: "Thalia", system: "Sistema" };
 
   return (
@@ -118,6 +120,28 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
         {b.deposit.status === "forfeited" && <ExceptionalRefundForm bookingId={b.id} />}
         {(b.status === "confirmed" || b.status === "completed") && !b.balance.paidAt && b.balance.amount > 0 && <BalanceForm bookingId={b.id} />}
       </Card>
+
+      {messages.length > 0 && (
+        <Card className="space-y-3">
+          <div>
+            <h2 className="font-medium">Avisar por WhatsApp</h2>
+            <p className="text-sm text-muted">Abre tu WhatsApp con el mensaje ya escrito; solo tenés que tocar enviar.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {messages.map((m) => (
+              <a
+                key={m.event}
+                href={m.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center rounded-full bg-[#1f8f4e] px-4 text-sm font-medium text-white hover:bg-[#187a42]"
+              >
+                {m.label}
+              </a>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {active && (
         <Card className="space-y-2">

@@ -38,6 +38,13 @@ export const env = {
   get resendApiKey() {
     return opt("RESEND_API_KEY");
   },
+  /** SMTP para enviar emails sin Resend (por ejemplo Gmail: smtp.gmail.com, puerto 465, contraseña de aplicación). */
+  get smtp(): { host: string; port: number; user: string; pass: string } | undefined {
+    const user = opt("SMTP_USER");
+    const pass = opt("SMTP_PASS");
+    if (!user || !pass) return undefined;
+    return { host: opt("SMTP_HOST") ?? "smtp.gmail.com", port: Number(opt("SMTP_PORT") ?? 465), user, pass: pass.replace(/\s+/g, "") };
+  },
   get emailFrom() {
     return opt("EMAIL_FROM") ?? "turnos@thaliamarecomakeup.com.ar";
   },

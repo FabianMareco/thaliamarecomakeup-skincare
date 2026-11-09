@@ -38,6 +38,12 @@ export async function pendingLists(now = new Date()): Promise<PendingLists> {
   };
 }
 
+/** Turnos confirmados que empiezan en las próximas `hours` horas (para mandar recordatorios a mano). */
+export async function upcomingConfirmed(hours = 48, now = new Date()): Promise<Booking[]> {
+  const list = await listBookingsBetween(now, new Date(now.getTime() + hours * 3600_000));
+  return list.filter((b) => b.status === "confirmed").sort((a, b) => a.startAt!.getTime() - b.startAt!.getTime());
+}
+
 export async function pendingCounts() {
   const l = await pendingLists();
   const counts = {
