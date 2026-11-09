@@ -6,7 +6,7 @@ import { z } from "zod";
 import { validateTemplate } from "@/lib/domain/slots";
 import { isValidTimeStr } from "@/lib/domain/time";
 import { WEEKDAYS, type Service, type Tenant } from "@/lib/domain/types";
-import type { AcceptMakeupInput, AdminBookingInput } from "@/lib/schemas";
+import type { AcceptMakeupInput, AdminBookingInput, PricingInput } from "@/lib/schemas";
 import { assertAdmin, createSession, destroySession } from "@/server/auth";
 import { toResult, UserError, type ActionResult } from "@/server/errors";
 import {
@@ -22,12 +22,14 @@ import {
   rejectBooking,
   requestResubmit,
   saveInternalNotes,
+  updateBookingPricing,
 } from "@/server/flows/admin";
 import { acceptMakeup, type OverlapWarning } from "@/server/flows/makeup";
 import { createAdminBooking } from "@/server/flows/manualBooking";
 import { closeDay, copyPreviousWeek, createSlot, deleteSlot, generateRange, saveWeeklyTemplate, updateSlot } from "@/server/flows/schedule";
 import { availabilityFor, type AvailabilityDay } from "@/server/flows/skincare";
 import { arDateStr } from "@/lib/domain/time";
+import { searchPatients } from "@/server/panel";
 import { getBooking } from "@/server/repo/bookings";
 import { getService, newServiceId, saveService } from "@/server/repo/services";
 import { loadTenant, updateTenant } from "@/server/repo/tenant";
@@ -112,6 +114,8 @@ export const attendanceAction = async (bookingId: string, attended: boolean) =>
   admin(async () => void (await markAttendance(id(bookingId), !!attended)));
 export const balanceAction = async (bookingId: string, method: string) =>
   admin(async () => void (await registerBalance(id(bookingId), String(method ?? ""))));
+export const pricingAction = async (bookingId: string, input: PricingInput) =>
+  admin(async () => void (await updateBookingPricing(id(bookingId), input)));
 export const notesAction = async (bookingId: string, notes: string) =>
   admin(async () => void (await saveInternalNotes(id(bookingId), String(notes ?? ""))));
 
@@ -119,6 +123,16 @@ export async function adminBookingAction(input: AdminBookingInput): Promise<Acti
   return admin(async () => {
     const b = await createAdminBooking(input);
     return { bookingId: b.id, status: b.status };
+  });
+}
+
+export type PatientSuggestion = { phone: string; name: string; email: string; bookingsCount: number; noShowCount: number };
+
+export async function searchPatientsAction(q: string): Promise<ActionResult<PatientSuggestion[]>> {
+  return toResult(async () => {
+    await assertAdmin();
+    const list = await searchPatients(String(q ?? "").slice(0, 80));
+    return list.map((c) => ({ phone: c.phone, name: c.name, email: c.email, bookingsCount: c.bookingsCount, noShowCount: c.noShowCount }));
   });
 }
 

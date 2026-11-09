@@ -40,7 +40,7 @@ export function ReceiptActions({ bookingId }: { bookingId: string }) {
       {mode ? (
         <div className="space-y-2">
           <label className="block text-sm font-medium" htmlFor={`reason-${bookingId}`}>
-            {mode === "resubmit" ? "Motivo (lo ve la clienta)" : "Motivo del rechazo (lo ve la clienta)"}
+            {mode === "resubmit" ? "Motivo (lo ve la paciente)" : "Motivo del rechazo (lo ve la paciente)"}
           </label>
           <Textarea id={`reason-${bookingId}`} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={mode === "resubmit" ? "Ej.: no se ve el monto" : "Ej.: el dinero no ingresó"} />
           <div className="flex gap-2">
@@ -83,7 +83,7 @@ export function SameDayActions({ bookingId }: { bookingId: string }) {
       <Feedback error={error} />
       {rejecting ? (
         <>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Mensaje para la clienta (opcional)" aria-label="Mensaje para la clienta" />
+          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Mensaje para la paciente (opcional)" aria-label="Mensaje para la paciente" />
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setRejecting(false)} disabled={pending}>
               Volver

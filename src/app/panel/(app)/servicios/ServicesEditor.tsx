@@ -162,7 +162,7 @@ function ServiceForm({ draft, onClose }: { draft: Draft; onClose: () => void }) 
       )}
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="h-5 w-5" checked={d.active} onChange={(e) => setD({ ...d, active: e.target.checked })} />
-        Activo (visible para las clientas)
+        Activo (visible en la web de turnos)
       </label>
       <Feedback error={error} />
       <div className="flex gap-2">

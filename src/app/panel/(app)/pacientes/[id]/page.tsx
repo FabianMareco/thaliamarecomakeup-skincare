@@ -5,9 +5,9 @@ import { fmtDateShort } from "@/lib/domain/time";
 import { getClient, listBookingsByClient } from "@/server/repo/bookings";
 import { BookingRow } from "../../../_components/bits";
 
-export const metadata = { title: "Clienta" };
+export const metadata = { title: "Paciente" };
 
-export default async function ClientaPage(props: PageProps<"/panel/clientas/[id]">) {
+export default async function PacientePage(props: PageProps<"/panel/pacientes/[id]">) {
   const { id } = await props.params;
   const clientId = decodeURIComponent(id);
   const [client, bookings] = await Promise.all([getClient(clientId), listBookingsByClient(clientId)]);

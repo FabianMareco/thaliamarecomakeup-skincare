@@ -3,7 +3,8 @@ import { isBookable } from "@/lib/domain/availability";
 import { fmtDateTimeLong } from "@/lib/domain/time";
 import { transition } from "@/lib/domain/transitions";
 import type { Booking, Receipt } from "@/lib/domain/types";
-import { refundDestinationSchema } from "@/lib/schemas";
+import { balanceFor, bookingTotal } from "@/lib/domain/money";
+import { firstError, pricingSchema, refundDestinationSchema, type PricingInput } from "@/lib/schemas";
 import { UserError } from "../errors";
 import { db } from "../firebase";
 import { notify } from "../notify/notify";
@@ -50,7 +51,7 @@ export async function approveReceipt(bookingId: string, now = new Date()): Promi
 /** Pedir reenviar el comprobante, con motivo y nuevo plazo. */
 export async function requestResubmit(bookingId: string, reason: string, now = new Date()): Promise<Booking> {
   const why = reason.trim();
-  if (why.length < 3) throw new UserError("Indicá el motivo para la clienta.");
+  if (why.length < 3) throw new UserError("Indicá el motivo para la paciente.");
   const pre = requireBooking(await getBooking(bookingId));
   const deadline = await uploadDeadlineFor(pre, now);
   const b = await db().runTransaction(async (tx) => {
@@ -282,6 +283,35 @@ export async function registerBalance(bookingId: string, method: string, now = n
       history: [...cur.history, { at: now, from: cur.status, to: cur.status, by: "admin", note: `Saldo cobrado (${m})` }],
       updatedAt: now,
     };
+    txSetBooking(tx, next);
+    return next;
+  });
+}
+
+/**
+ * Cambia los tratamientos extra y/o el precio total (combo) de una reserva de
+ * skincare. La seña no cambia: se ajusta el saldo.
+ */
+export async function updateBookingPricing(bookingId: string, raw: PricingInput, now = new Date()): Promise<Booking> {
+  const parsed = pricingSchema.safeParse(raw);
+  if (!parsed.success) throw new UserError(firstError(parsed.error));
+  const { extras } = parsed.data;
+  const totalPrice = parsed.data.totalPrice === "" || parsed.data.totalPrice === undefined ? undefined : parsed.data.totalPrice;
+  return db().runTransaction(async (tx) => {
+    const cur = requireBooking(await txGetBooking(tx, bookingId));
+    if (cur.line !== "skincare") throw new UserError("Los extras solo se pueden cargar en turnos de skincare.");
+    if (["rejected", "expired", "cancelled_refunded", "cancelled_forfeited", "no_show"].includes(cur.status)) {
+      throw new UserError("Esta reserva ya no está activa.");
+    }
+    const before = bookingTotal(cur);
+    const next: Booking = { ...cur, extras: extras.length > 0 ? extras : undefined, totalPrice, updatedAt: now };
+    const total = bookingTotal(next);
+    next.balance = { ...cur.balance, amount: balanceFor(total, cur.deposit.amount) };
+    const names = extras.map((e) => e.name).join(", ");
+    next.history = [
+      ...cur.history,
+      { at: now, from: cur.status, to: cur.status, by: "admin", note: `Precio: $${before} → $${total}${names ? ` (extras: ${names})` : ""}` },
+    ];
     txSetBooking(tx, next);
     return next;
   });

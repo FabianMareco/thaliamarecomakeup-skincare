@@ -1,6 +1,7 @@
 import { arLocalToInstant, addDaysStr } from "@/lib/domain/time";
 import type { Booking, Slot } from "@/lib/domain/types";
-import { listBookingsBetween, listBookingsByDepositStatus, listBookingsByStatus, listSlotsBetween } from "./repo/bookings";
+import type { Client } from "@/lib/domain/types";
+import { listBookingsBetween, listBookingsByDepositStatus, listBookingsByStatus, listClients, listSlotsBetween } from "./repo/bookings";
 
 // Consultas para las pantallas del panel.
 
@@ -88,4 +89,24 @@ export async function agenda(from: string, to: string): Promise<Map<string, Agen
   const time = (i: AgendaItem) => (i.kind === "slot" ? i.slot.startAt : i.startAt).getTime();
   for (const list of days.values()) list.sort((a, b) => time(a) - time(b));
   return days;
+}
+
+const normText = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+/** Busca pacientes por nombre, teléfono o email (para autocompletar al cargar una reserva). */
+export async function searchPatients(q: string, limit = 8): Promise<Client[]> {
+  const query = q.trim();
+  if (query.length < 2) return [];
+  const text = normText(query);
+  const digits = query.replace(/\D/g, "");
+  const all = await listClients();
+  return all
+    .filter(
+      (c) =>
+        normText(c.name).includes(text) ||
+        (digits.length >= 4 && c.phone.replace(/\D/g, "").includes(digits)) ||
+        (query.includes("@") && normText(c.email).includes(text)),
+    )
+    .sort((a, b) => b.lastBookingAt.getTime() - a.lastBookingAt.getTime())
+    .slice(0, limit);
 }

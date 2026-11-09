@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui";
-import { formatARS } from "@/lib/domain/money";
+import { formatARS, serviceLabel } from "@/lib/domain/money";
 import { fmtDateStrLong, fmtDateTimeShort } from "@/lib/domain/time";
 import { STATUS_LABEL } from "@/lib/domain/transitions";
 import type { Booking, BookingStatus, Receipt } from "@/lib/domain/types";
@@ -31,7 +31,7 @@ export function BookingRow({ b, extra }: { b: Booking; extra?: React.ReactNode }
         <StatusBadge status={b.status} />
       </div>
       <p className="mt-1 font-medium">{b.client.name}</p>
-      <p className="text-sm text-muted">{b.service.name}</p>
+      <p className="text-sm text-muted">{serviceLabel(b)}</p>
       <p className="text-sm">{whenShort(b)}</p>
       {extra}
     </Link>

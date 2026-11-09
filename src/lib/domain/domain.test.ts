@@ -9,7 +9,7 @@ import {
   isSlotFree,
   refundDeadline,
 } from "./availability";
-import { makeupDeposit, skincareDeposit } from "./money";
+import { balanceFor, bookingTotal, listPrice, makeupDeposit, skincareDeposit } from "./money";
 import { normalizePhone } from "./phone";
 import { validateReceipt, MAX_RECEIPT_BYTES } from "./receipts";
 import { dueReminderOffsets, offsetsToMarkSent } from "./reminders";
@@ -49,6 +49,20 @@ describe("seña", () => {
     expect(makeupDeposit(240000, 50)).toEqual({ deposit: 120000, balance: 120000 });
     expect(makeupDeposit(240000, 50, 15000)).toEqual({ deposit: 120000, balance: 135000 });
     expect(makeupDeposit(150001, 50).deposit).toBe(75001);
+  });
+});
+
+describe("extras y precio de combo", () => {
+  const extras = [{ name: "Diseño + perfilado de cejas", price: 20000 }];
+  it("precio de lista = principal + extras; el combo fija otro total", () => {
+    expect(listPrice(50000, extras)).toBe(70000);
+    expect(bookingTotal({ service: { price: 50000 }, extras })).toBe(70000);
+    expect(bookingTotal({ service: { price: 50000 }, extras, totalPrice: 65000 })).toBe(65000);
+    expect(bookingTotal({ service: { price: 50000 } })).toBe(50000);
+  });
+  it("al cambiar el total, la seña no cambia y el saldo se ajusta (nunca negativo)", () => {
+    expect(balanceFor(65000, 20000)).toBe(45000);
+    expect(balanceFor(15000, 20000)).toBe(0);
   });
 });
 

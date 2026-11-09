@@ -138,6 +138,10 @@ export type Booking = {
   line: Line;
   status: BookingStatus;
   service: { id: string; name: string; price: number; durationMin?: number };
+  /** Tratamientos agregados al principal (por ejemplo, un perfilado de cejas). */
+  extras?: { serviceId?: string; name: string; price: number }[];
+  /** Precio total fijado por Thalia (combo); si no está, se usa el de lista. */
+  totalPrice?: number;
   slotId?: string;
   startAt?: Date;
   date?: string;

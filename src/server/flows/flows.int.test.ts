@@ -8,6 +8,7 @@ import { manageTokenFor } from "../links";
 import { deleteReceipt, readReceipt } from "../receiptStore";
 import { getBooking, getClient, getSlot } from "../repo/bookings";
 import { JPG, putSlot, setupTenant, type Sent } from "../test-helpers";
+import { searchPatients } from "../panel";
 import { getManageView, getPaymentView } from "../views";
 import {
   adminCancel,
@@ -18,6 +19,7 @@ import {
   markRefunded,
   rejectBooking,
   requestResubmit,
+  updateBookingPricing,
 } from "./admin";
 import { runTick } from "./cron";
 import { acceptMakeup, createMakeupRequest } from "./makeup";
@@ -519,5 +521,48 @@ describe("WhatsApp manual desde el panel", () => {
     expect(decodeURIComponent(confirmed[1].url)).toContain("reprogramar o cancelar con reintegro");
     const near = manualMessages((await getBooking(bookingId))!, tenant, arLocalToInstant("2026-11-09", "12:00"));
     expect(decodeURIComponent(near.find((m) => m.event === "reminder")!.url)).toContain("Calle Falsa 123");
+  });
+});
+
+describe("Extras, precio de combo y búsqueda de pacientes", () => {
+  const CEJAS = seedServiceId({ line: "skincare", category: "Cejas y pestañas", name: "Diseño + perfilado de cejas" });
+  const base = { serviceId: LIMPIEZA, name: "Marta Ruiz", phone: "11 6000-0001", email: "marta@example.com" };
+
+  it("reserva manual con un extra y precio de combo: el saldo sale del total", async () => {
+    const slot = await putSlot({ date: "2026-11-10", time: "09:00", durationMin: 120, modality: "in_person" });
+    const b = await createAdminBooking(
+      { ...base, slotId: slot.id, depositPaid: true, notifyClient: true, extras: [{ serviceId: CEJAS, name: "Diseño + perfilado de cejas", price: 20000 }], totalPrice: 65000 },
+      NOW,
+    );
+    expect(b).toMatchObject({ totalPrice: 65000, deposit: { amount: 20000 }, balance: { amount: 45000 } });
+    expect(b.extras).toEqual([{ serviceId: CEJAS, name: "Diseño + perfilado de cejas", price: 20000 }]);
+    const confirmation = sent.find((s) => s.template === "turno_confirmado")!;
+    expect(confirmation.params![1]).toBe("Limpieza profunda Clásica + Diseño + perfilado de cejas");
+    expect(confirmation.params![4]).toBe("$45.000");
+    const view = (await getManageView(manageTokenFor(b.id), NOW))!;
+    expect(view.booking).toMatchObject({ serviceName: "Limpieza profunda Clásica + Diseño + perfilado de cejas", servicePrice: 65000, balanceAmount: 45000 });
+  });
+
+  it("agregar un extra a una reserva ya confirmada ajusta el saldo, no la seña", async () => {
+    const { bookingId } = await bookFuture();
+    await confirmDepositManually(bookingId, {}, NOW);
+    const b = await updateBookingPricing(bookingId, { extras: [{ name: "Perfilado de cejas", price: 18000 }] }, NOW);
+    expect(b).toMatchObject({ deposit: { amount: 20000 }, balance: { amount: 48000 } }); // 50.000 + 18.000 - 20.000
+    expect(b.history.at(-1)!.note).toBe("Precio: $50000 → $68000 (extras: Perfilado de cejas)");
+    const combo = await updateBookingPricing(bookingId, { extras: [{ name: "Perfilado de cejas", price: 18000 }], totalPrice: 60000 }, NOW);
+    expect(combo.balance.amount).toBe(40000);
+    const cleared = await updateBookingPricing(bookingId, { extras: [], totalPrice: "" }, NOW);
+    expect(cleared.balance.amount).toBe(30000);
+    expect((await getBooking(bookingId))!.extras).toBeUndefined();
+    expect((await getBooking(bookingId))!.totalPrice).toBeUndefined();
+  });
+
+  it("encuentra pacientes que ya reservaron por nombre (sin tildes) o teléfono", async () => {
+    await bookFuture(1);
+    const slot = await putSlot({ date: "2026-11-11", time: "09:00", durationMin: 120, modality: "in_person" });
+    await createAdminBooking({ ...base, name: "Lucía Fernández", phone: "11 7000-1234", slotId: slot.id, depositPaid: true, notifyClient: false }, NOW);
+    expect((await searchPatients("lucia")).map((c) => c.name)).toEqual(["Lucía Fernández"]);
+    expect((await searchPatients("7000-12")).map((c) => c.phone)).toEqual(["+5491170001234"]);
+    expect(await searchPatients("x")).toEqual([]);
   });
 });

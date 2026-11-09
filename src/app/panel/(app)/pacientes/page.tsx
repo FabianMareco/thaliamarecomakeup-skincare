@@ -3,11 +3,11 @@ import { Badge, Input } from "@/components/ui";
 import { fmtDateShort } from "@/lib/domain/time";
 import { listClients } from "@/server/repo/bookings";
 
-export const metadata = { title: "Clientas" };
+export const metadata = { title: "Pacientes" };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-export default async function ClientasPage(props: PageProps<"/panel/clientas">) {
+export default async function PacientesPage(props: PageProps<"/panel/pacientes">) {
   const sp = await props.searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const all = await listClients();
@@ -18,14 +18,14 @@ export default async function ClientasPage(props: PageProps<"/panel/clientas">) 
     .slice(0, 100);
   return (
     <div className="space-y-5">
-      <h1 className="font-display text-2xl">Clientas</h1>
-      <form action="/panel/clientas">
-        <Input name="q" type="search" defaultValue={q} placeholder="Buscar por nombre, teléfono o email" aria-label="Buscar clienta" />
+      <h1 className="font-display text-2xl">Pacientes</h1>
+      <form action="/panel/pacientes">
+        <Input name="q" type="search" defaultValue={q} placeholder="Buscar por nombre, teléfono o email" aria-label="Buscar paciente" />
       </form>
       <ul className="space-y-2">
         {list.map((c) => (
           <li key={c.id}>
-            <Link href={`/panel/clientas/${encodeURIComponent(c.id)}`} className="block rounded-2xl border border-line bg-white p-4 hover:border-accent">
+            <Link href={`/panel/pacientes/${encodeURIComponent(c.id)}`} className="block rounded-2xl border border-line bg-white p-4 hover:border-accent">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-medium">{c.name}</p>
@@ -41,7 +41,7 @@ export default async function ClientasPage(props: PageProps<"/panel/clientas">) 
           </li>
         ))}
       </ul>
-      {list.length === 0 && <p className="text-sm text-muted">No hay clientas que coincidan.</p>}
+      {list.length === 0 && <p className="text-sm text-muted">No hay pacientes que coincidan.</p>}
     </div>
   );
 }

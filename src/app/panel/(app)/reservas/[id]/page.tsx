@@ -6,12 +6,23 @@ import { fmtDateStrLong, fmtDateTimeShort } from "@/lib/domain/time";
 import { DEPOSIT_LABEL, STATUS_LABEL } from "@/lib/domain/transitions";
 import { manageUrl, paymentUrl } from "@/server/links";
 import { manualMessages } from "@/server/notify/manual";
+import { bookingTotal, serviceLabel } from "@/lib/domain/money";
 import { getBooking } from "@/server/repo/bookings";
-import { getService } from "@/server/repo/services";
+import { getService, listServices } from "@/server/repo/services";
 import { getTenant } from "@/server/repo/tenant";
 import { ReceiptActions, RefundDoneButton, SameDayActions } from "../../../_components/actions";
 import { money, ReceiptPreview, StatusBadge, whenShort } from "../../../_components/bits";
-import { AcceptMakeupForm, AttendanceButtons, BalanceForm, CancelForm, ExceptionalRefundForm, ManualConfirmForm, NotesForm, RescheduleForm } from "./DetailActions";
+import {
+  AcceptMakeupForm,
+  AttendanceButtons,
+  BalanceForm,
+  CancelForm,
+  ExceptionalRefundForm,
+  ManualConfirmForm,
+  NotesForm,
+  PricingForm,
+  RescheduleForm,
+} from "./DetailActions";
 
 export const metadata = { title: "Reserva" };
 
@@ -19,10 +30,15 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
   const { id } = await props.params;
   const b = await getBooking(id);
   if (!b) notFound();
-  const [service, tenant] = await Promise.all([b.line === "makeup" ? getService(b.service.id) : null, getTenant()]);
+  const [service, tenant, skincareServices] = await Promise.all([
+    b.line === "makeup" ? getService(b.service.id) : null,
+    getTenant(),
+    b.line === "skincare" ? listServices({ line: "skincare", activeOnly: true }) : [],
+  ]);
+  const pricingEditable = b.line === "skincare" && !["rejected", "expired", "cancelled_refunded", "cancelled_forfeited", "no_show"].includes(b.status);
   const active = ["awaiting_payment", "awaiting_verification", "confirmed"].includes(b.status);
   const messages = manualMessages(b, tenant);
-  const actor = { client: "Clienta", admin: "Thalia", system: "Sistema" };
+  const actor = { client: "Paciente", admin: "Thalia", system: "Sistema" };
 
   return (
     <div className="space-y-6">
@@ -32,18 +48,18 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
           <StatusBadge status={b.status} />
           <Badge tone="neutral">{b.line === "skincare" ? "Skincare" : "Maquillaje"}</Badge>
         </div>
-        <h1 className="font-display text-2xl leading-tight">{b.service.name}</h1>
+        <h1 className="font-display text-2xl leading-tight">{serviceLabel(b)}</h1>
         <p className="text-[15px]">{whenShort(b)}</p>
       </header>
 
       <Card className="space-y-1">
-        <Row label="Clienta">{b.client.name}</Row>
+        <Row label="Paciente">{b.client.name}</Row>
         <Row label="WhatsApp">{b.client.phone}</Row>
         <Row label="Email">{b.client.email}</Row>
         {b.line === "skincare" && <Row label="Primera vez">{b.client.firstVisit ? "Sí" : "No"}</Row>}
         <div className="flex flex-wrap gap-2 pt-3">
           <WhatsAppButton number={b.client.phone} text={`Hola ${b.client.name.split(" ")[0]}! Te escribo por tu reserva ${b.code}.`} label="WhatsApp" />
-          <a href={`/panel/clientas/${encodeURIComponent(b.clientId)}`} className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm">
+          <a href={`/panel/pacientes/${encodeURIComponent(b.clientId)}`} className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm">
             Ver historial
           </a>
         </div>
@@ -89,6 +105,7 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
       <Card className="space-y-3">
         <h2 className="font-medium">Seña y pagos</h2>
         <div>
+          {b.line === "skincare" && <Row label="Total">{money(bookingTotal(b))}</Row>}
           <Row label="Seña">{b.deposit.amount ? money(b.deposit.amount) : "A definir"}</Row>
           <Row label="Estado de la seña">{DEPOSIT_LABEL[b.deposit.status]}</Row>
           {b.deposit.receiptUploadDeadline && b.status === "awaiting_payment" && (
@@ -145,7 +162,7 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
 
       {active && (
         <Card className="space-y-2">
-          <h2 className="font-medium">Links de la clienta</h2>
+          <h2 className="font-medium">Links de la paciente</h2>
           <p className="text-sm text-muted">Por si necesitás reenviárselos por WhatsApp.</p>
           <div className="flex items-center justify-between gap-2 text-sm">
             <span>Pago / estado</span>
@@ -176,6 +193,23 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
         <Card className="space-y-3">
           <h2 className="font-medium">Cancelar</h2>
           <CancelForm bookingId={b.id} line={b.line} />
+        </Card>
+      )}
+
+      {pricingEditable && (
+        <Card className="space-y-3">
+          <h2 className="font-medium">Tratamientos y precio</h2>
+          <p className="text-sm text-muted">
+            {b.service.name}: {money(b.service.price)}. Podés sumar extras (por ejemplo, un perfilado de cejas) y fijar el precio del combo. La seña no
+            cambia; se ajusta el saldo.
+          </p>
+          <PricingForm
+            bookingId={b.id}
+            basePrice={b.service.price}
+            initialExtras={b.extras ?? []}
+            initialTotal={b.totalPrice}
+            options={skincareServices.filter((s) => s.id !== b.service.id).map((s) => ({ id: s.id, name: s.name, price: s.price }))}
+          />
         </Card>
       )}
 

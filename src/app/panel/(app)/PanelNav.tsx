@@ -8,7 +8,7 @@ const ITEMS = [
   { href: "/panel", label: "Pendientes", main: true },
   { href: "/panel/agenda", label: "Agenda", main: true },
   { href: "/panel/horarios", label: "Horarios", main: true },
-  { href: "/panel/clientas", label: "Clientas", main: true },
+  { href: "/panel/pacientes", label: "Pacientes", main: true },
   { href: "/panel/servicios", label: "Servicios", main: false },
   { href: "/panel/configuracion", label: "Configuración", main: false },
 ];

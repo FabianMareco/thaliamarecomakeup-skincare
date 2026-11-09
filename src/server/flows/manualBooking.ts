@@ -1,5 +1,5 @@
 import { isSlotFree } from "@/lib/domain/availability";
-import { skincareDeposit } from "@/lib/domain/money";
+import { listPrice, skincareDeposit } from "@/lib/domain/money";
 import { normalizePhone } from "@/lib/domain/phone";
 import { findOverlap, newOpenSlot, validateSlotInput } from "@/lib/domain/slots";
 import { transition } from "@/lib/domain/transitions";
@@ -26,7 +26,7 @@ export async function createAdminBooking(raw: AdminBookingInput, now = new Date(
   if (!parsed.success) throw new UserError(firstError(parsed.error));
   const input = parsed.data;
   const phone = normalizePhone(input.phone);
-  if (!phone) throw new UserError("Revisá el WhatsApp de la clienta (con código de área, ej. 11 5847-0009).");
+  if (!phone) throw new UserError("Revisá el WhatsApp de la paciente (con código de área, ej. 11 5847-0009).");
   if (input.newSlot) {
     const err = validateSlotInput(input.newSlot);
     if (err) throw new UserError(err);
@@ -36,7 +36,10 @@ export async function createAdminBooking(raw: AdminBookingInput, now = new Date(
   if (!service || service.line !== "skincare") throw new UserError("Elegí un tratamiento de skincare.");
   const code = await uniqueBookingCode();
   const bookingId = newBookingId();
-  const { deposit, balance } = skincareDeposit(service.price, tenant.skincare.depositAmount);
+  const extras = input.extras;
+  const totalPrice = input.totalPrice === "" || input.totalPrice === undefined ? undefined : input.totalPrice;
+  const total = totalPrice ?? listPrice(service.price, extras);
+  const { deposit, balance } = skincareDeposit(total, tenant.skincare.depositAmount);
 
   const booking = await db().runTransaction(async (tx) => {
     // Lecturas primero (Firestore lo exige), escrituras después.
@@ -61,6 +64,8 @@ export async function createAdminBooking(raw: AdminBookingInput, now = new Date(
       line: "skincare",
       status: "awaiting_payment",
       service: { id: service.id, name: service.name, price: service.price, durationMin: service.durationMin },
+      ...(extras.length > 0 ? { extras } : {}),
+      ...(totalPrice !== undefined ? { totalPrice } : {}),
       slotId: slot.id,
       startAt: slot.startAt,
       date: slot.date,

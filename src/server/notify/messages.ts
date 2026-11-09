@@ -1,5 +1,5 @@
 import { refundDeadline } from "@/lib/domain/availability";
-import { formatARS } from "@/lib/domain/money";
+import { formatARS, serviceLabel } from "@/lib/domain/money";
 import { waLink } from "@/lib/domain/phone";
 import { fmtDateStrLong, fmtDateTimeLong } from "@/lib/domain/time";
 import type { Booking, Tenant } from "@/lib/domain/types";
@@ -122,7 +122,7 @@ function email(ctx: MessageCtx, subject: string, title: string, paragraphs: stri
 export function clientEmail(event: ClientEvent, ctx: MessageCtx): EmailContent {
   const { booking: b, tenant, links } = ctx;
   const name = esc(b.client.name.split(" ")[0] || b.client.name);
-  const svc = esc(b.service.name);
+  const svc = esc(serviceLabel(b));
   const when = esc(whenText(b));
   const amount = formatARS(b.deposit.amount);
   const deadline = b.deposit.receiptUploadDeadline ? fmtDateTimeLong(b.deposit.receiptUploadDeadline) : "";
@@ -240,7 +240,7 @@ export function clientEmail(event: ClientEvent, ctx: MessageCtx): EmailContent {
 export function adminEmail(event: AdminEvent, ctx: MessageCtx): EmailContent {
   const { booking: b, links } = ctx;
   const who = `${esc(b.client.name)} (${esc(b.client.phone)})`;
-  const svc = esc(b.service.name);
+  const svc = esc(serviceLabel(b));
   const when = esc(whenText(b));
   const cta = { label: "Abrir en el panel", url: links.panel };
   const urgent = "🔴 URGENTE · ";
@@ -268,12 +268,12 @@ export function adminEmail(event: AdminEvent, ctx: MessageCtx): EmailContent {
         b.makeup?.comments ? `Comentarios: <em>${esc(b.makeup.comments)}</em>` : "",
       ].filter(Boolean), cta);
     case "admin_cancelled":
-      return email(ctx, `Cancelación ${b.code}`, "Una clienta canceló", [
+      return email(ctx, `Cancelación ${b.code}`, "Una paciente canceló", [
         `${who} canceló <strong>${svc}</strong> (${when}).`,
         b.status === "cancelled_refunded" ? "Pidió reintegro de la seña." : "La seña queda retenida.",
       ], cta);
     case "admin_rescheduled":
-      return email(ctx, `Reprogramación ${b.code}`, "Una clienta reprogramó", [
+      return email(ctx, `Reprogramación ${b.code}`, "Una paciente reprogramó", [
         `${who} reprogramó <strong>${svc}</strong>${ctx.previousWhen ? ` del ${esc(ctx.previousWhen)}` : ""} al <strong>${when}</strong>.`,
       ], cta);
     case "admin_refund_pending":

@@ -1,4 +1,5 @@
 import { clientOptions, refundDeadline, type ClientOptions } from "@/lib/domain/availability";
+import { bookingTotal, serviceLabel } from "@/lib/domain/money";
 import type { Booking, BookingStatus, Line, Modality, Tenant } from "@/lib/domain/types";
 import { paymentMethodFor, type PaymentStartResult } from "./payments";
 import { findBookingByToken } from "./repo/bookings";
@@ -39,8 +40,8 @@ function toPublic(b: Booking): PublicBooking {
     code: b.code,
     line: b.line,
     status: b.status,
-    serviceName: b.service.name,
-    servicePrice: b.service.price,
+    serviceName: serviceLabel(b),
+    servicePrice: bookingTotal(b),
     startAt: b.startAt,
     modality: b.modality,
     makeup: b.makeup && {

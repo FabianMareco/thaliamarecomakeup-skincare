@@ -17,7 +17,13 @@ import {
   saveTemplateAction,
   updateSlotAction,
 } from "../../actions";
+import { pricingPayload } from "../../_components/ExtrasEditor";
 import { BookingFields, emptyBookingFields, type BookingFieldsValue, type ServiceOption } from "./BookingFields";
+
+function bookingPayload(v: BookingFieldsValue, where: { slotId: string } | { newSlot: { date: string; time: string; durationMin: number; modality: Modality } }) {
+  const { pricing, ...rest } = v;
+  return { ...rest, ...pricingPayload(pricing), ...where };
+}
 
 const DAY_LABEL: Record<Weekday, string> = { mon: "Lunes", tue: "Martes", wed: "Miércoles", thu: "Jueves", fri: "Viernes", sat: "Sábado", sun: "Domingo" };
 const MODALITY_LABEL: Record<Modality, string> = { in_person: "Presencial", virtual: "Virtual" };
@@ -158,7 +164,7 @@ export function DayEditor({ date, slots, services }: { date: string; slots: DayS
                     disabled={pending}
                     onClick={() =>
                       list.run(
-                        () => adminBookingAction({ ...book, slotId: s.id }),
+                        () => adminBookingAction(bookingPayload(book, { slotId: s.id })),
                         (d) => bookingMsg(d.status),
                         () => {
                           setOpen(null);
@@ -235,7 +241,7 @@ export function DayEditor({ date, slots, services }: { date: string; slots: DayS
           const slot = { date, time: form.time, durationMin: Number(form.durationMin), modality: form.modality };
           if (addBooked) {
             add.run(
-              () => adminBookingAction({ ...newBook, newSlot: slot }),
+              () => adminBookingAction(bookingPayload(newBook, { newSlot: slot })),
               (d) => bookingMsg(d.status),
               () => {
                 setForm({ ...form, time: "" });
@@ -260,7 +266,7 @@ export function DayEditor({ date, slots, services }: { date: string; slots: DayS
         <p className="text-xs text-muted">Hora · duración (min) · modalidad</p>
         <label className="flex items-center gap-2 text-[15px]">
           <input type="checkbox" className="h-5 w-5 accent-[var(--color-accent)]" checked={addBooked} onChange={(e) => setAddBooked(e.target.checked)} />
-          Ya está reservado (cargar los datos de la clienta)
+          Ya está reservado (cargar los datos de la paciente)
         </label>
         {addBooked && <BookingFields value={newBook} onChange={setNewBook} services={services} idPrefix="new" />}
         <Feedback error={add.error} done={add.done} />

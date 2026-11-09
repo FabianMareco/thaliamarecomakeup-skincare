@@ -41,6 +41,23 @@ export const makeupRequestSchema = clientDataSchema
   });
 export type MakeupRequestInput = z.input<typeof makeupRequestSchema>;
 
+export const extrasSchema = z
+  .array(
+    z.object({
+      serviceId: z.string().max(150).optional(),
+      name: trimmed(120).min(2, "Indicá el nombre del tratamiento extra"),
+      price: z.coerce.number().int().min(0, "El precio no puede ser negativo"),
+    }),
+  )
+  .max(5, "Como máximo 5 tratamientos extra")
+  .default([]);
+
+/** Total fijado a mano (combo). Vacío = precio de lista. */
+const totalPriceSchema = z.union([z.literal(""), z.coerce.number().int().min(0, "El total no puede ser negativo")]).optional();
+
+export const pricingSchema = z.object({ extras: extrasSchema, totalPrice: totalPriceSchema });
+export type PricingInput = z.input<typeof pricingSchema>;
+
 /** Reserva cargada a mano por Thalia (por ejemplo, una clienta que reservó por WhatsApp). */
 export const adminBookingSchema = z
   .object({
@@ -54,12 +71,14 @@ export const adminBookingSchema = z
         modality: z.enum(["in_person", "virtual"]),
       })
       .optional(),
-    name: trimmed(80).min(2, "Ingresá el nombre de la clienta"),
-    phone: trimmed(30).min(6, "Ingresá el WhatsApp de la clienta"),
+    name: trimmed(80).min(2, "Ingresá el nombre de la paciente"),
+    phone: trimmed(30).min(6, "Ingresá el WhatsApp de la paciente"),
     email: z.union([z.literal(""), trimmed(120).toLowerCase().pipe(z.email("El email no es válido"))]).default(""),
     firstVisit: z.boolean().default(false),
     depositPaid: z.boolean(),
     notifyClient: z.boolean().default(true),
+    extras: extrasSchema,
+    totalPrice: totalPriceSchema,
   })
   .refine((d) => !!d.slotId !== !!d.newSlot, { message: "Elegí un horario", path: ["slotId"] });
 export type AdminBookingInput = z.input<typeof adminBookingSchema>;

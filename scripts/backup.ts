@@ -20,9 +20,9 @@ async function main() {
   const count = (prefix: string) => backup.docs.filter((d) => d.path.startsWith(prefix + "/")).length;
   console.log(
     `Copia guardada en ${file}\n` +
-      `  reservas: ${count("bookings")} · clientas: ${count("clients")} · horarios: ${count("slots")} · ` +
+      `  reservas: ${count("bookings")} · pacientes: ${count("clients")} · horarios: ${count("slots")} · ` +
       `servicios: ${count("services")} · comprobantes: ${backup.docs.filter((d) => /^receiptFiles\/[^/]+$/.test(d.path)).length}\n` +
-      `Contiene datos personales de las clientas: guardala en un lugar privado.`,
+      `Contiene datos personales de las pacientes: guardala en un lugar privado.`,
   );
 }
 

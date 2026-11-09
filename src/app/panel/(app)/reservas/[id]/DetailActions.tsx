@@ -7,6 +7,7 @@ import { formatARS, makeupDeposit } from "@/lib/domain/money";
 import { fmtDateStrLong } from "@/lib/domain/time";
 import type { Line } from "@/lib/domain/types";
 import { Feedback, useAction } from "../../../_components/actions";
+import { ExtrasEditor, pricingPayload, type ExtraOption, type PricingDraft } from "../../../_components/ExtrasEditor";
 import {
   acceptMakeupAction,
   attendanceAction,
@@ -14,6 +15,7 @@ import {
   cancelAction,
   confirmManualAction,
   notesAction,
+  pricingAction,
   refundPendingAction,
   rejectAction,
   rescheduleAction,
@@ -68,7 +70,7 @@ export function AcceptMakeupForm({
   if (rejecting) {
     return (
       <div className="space-y-2">
-        <Field label="Mensaje para la clienta (opcional)" htmlFor="rej-msg">
+        <Field label="Mensaje para la paciente (opcional)" htmlFor="rej-msg">
           <Textarea id="rej-msg" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ej.: ya tengo esa fecha ocupada" />
         </Field>
         <Feedback error={error} />
@@ -161,7 +163,7 @@ export function ManualConfirmForm({ bookingId }: { bookingId: string }) {
         run(() => confirmManualAction(bookingId, fd));
       }}
     >
-      <p className="text-sm">Usalo si la clienta te mandó la seña por otro medio (por ejemplo, por WhatsApp). La reserva queda confirmada.</p>
+      <p className="text-sm">Usalo si la paciente te mandó la seña por otro medio (por ejemplo, por WhatsApp). La reserva queda confirmada.</p>
       <Field label="Titular que transfirió (opcional)" htmlFor="m-payer">
         <Input id="m-payer" name="payerName" />
       </Field>
@@ -220,7 +222,7 @@ export function RescheduleForm({ bookingId }: { bookingId: string }) {
           Cerrar
         </Button>
         <Button className="flex-1" disabled={!slot || pending} onClick={() => slot && run(() => rescheduleAction(bookingId, slot.id), undefined, () => setDays(null))}>
-          Reprogramar y avisar a la clienta
+          Reprogramar y avisar a la paciente
         </Button>
       </div>
     </div>
@@ -248,7 +250,7 @@ export function CancelForm({ bookingId, line }: { bookingId: string; line: Line 
       )}
       <Feedback error={error} />
       <Button variant="danger" className="w-full" disabled={!refund || pending} onClick={() => run(() => cancelAction(bookingId, refund === "yes", destination))}>
-        Cancelar reserva y avisar a la clienta
+        Cancelar reserva y avisar a la paciente
       </Button>
     </div>
   );
@@ -266,7 +268,7 @@ export function ExceptionalRefundForm({ bookingId }: { bookingId: string }) {
     );
   return (
     <div className="space-y-2 rounded-xl border border-line p-3">
-      <Field label="Alias o CBU de la clienta" htmlFor="x-dest">
+      <Field label="Alias o CBU de la paciente" htmlFor="x-dest">
         <Input id="x-dest" value={destination} onChange={(e) => setDestination(e.target.value)} />
       </Field>
       <Feedback error={error} />
@@ -319,6 +321,37 @@ export function BalanceForm({ bookingId }: { bookingId: string }) {
       <div className="w-full">
         <Feedback error={error} />
       </div>
+    </div>
+  );
+}
+
+export function PricingForm({
+  bookingId,
+  basePrice,
+  initialExtras,
+  initialTotal,
+  options,
+}: {
+  bookingId: string;
+  basePrice: number;
+  initialExtras: { serviceId?: string; name: string; price: number }[];
+  initialTotal?: number;
+  options: ExtraOption[];
+}) {
+  const { pending, error, done, run } = useAction();
+  const initial: PricingDraft = {
+    extras: initialExtras.map((e) => ({ serviceId: e.serviceId, name: e.name, price: String(e.price) })),
+    totalPrice: initialTotal === undefined ? "" : String(initialTotal),
+  };
+  const [draft, setDraft] = useState<PricingDraft>(initial);
+  const changed = JSON.stringify(draft) !== JSON.stringify(initial);
+  return (
+    <div className="space-y-3">
+      <ExtrasEditor value={draft} onChange={setDraft} options={options} basePrice={basePrice} idPrefix="detail-pricing" />
+      <Feedback error={error} done={done} />
+      <Button className="w-full" disabled={pending || !changed} onClick={() => run(() => pricingAction(bookingId, pricingPayload(draft)), "Precio actualizado")}>
+        Guardar precio
+      </Button>
     </div>
   );
 }
