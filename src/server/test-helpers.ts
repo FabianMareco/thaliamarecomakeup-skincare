@@ -8,7 +8,15 @@ import { seed } from "./seed";
 
 // Utilidades para los tests de integración contra los emuladores.
 
-export type Sent = { channel: "email" | "whatsapp"; to: string; subject?: string; template?: string; params?: string[] };
+export type Sent = {
+  channel: "email" | "whatsapp";
+  to: string;
+  subject?: string;
+  html?: string;
+  attachments?: string[];
+  template?: string;
+  params?: string[];
+};
 
 export async function resetEmulators(): Promise<void> {
   const project = process.env.FIREBASE_PROJECT_ID;
@@ -29,7 +37,7 @@ export function captureNotifications(fail = false): Sent[] {
   setNotifyProviders({
     email: {
       async send(m) {
-        sent.push({ channel: "email", to: m.to, subject: m.subject });
+        sent.push({ channel: "email", to: m.to, subject: m.subject, html: m.html, attachments: m.attachments?.map((a) => a.filename) });
         return result();
       },
     },

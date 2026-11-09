@@ -1,6 +1,7 @@
 import { WHATSAPP_LANGUAGE, WHATSAPP_TEMPLATES } from "@/config/whatsapp-templates";
 import type { Booking, Tenant } from "@/lib/domain/types";
 import { cols } from "../db";
+import { calendarLinks } from "../calendar";
 import { manageUrl, panelBookingUrl, paymentUrl } from "../links";
 import { loadTenant } from "../repo/tenant";
 import {
@@ -16,6 +17,9 @@ import { emailProvider, whatsappProvider, type EmailProvider, type SendResult, t
 
 // Despacha cada evento a email y WhatsApp y registra el resultado en
 // `notifications`. Un canal que falla no impide el otro.
+
+/** Avisos a la paciente que llevan el turno como archivo de calendario. */
+const CALENDAR_EVENTS: ClientEvent[] = ["confirmed", "rescheduled", "reminder"];
 
 let overrides: { email?: EmailProvider; whatsapp?: WhatsAppProvider } = {};
 
@@ -47,7 +51,12 @@ export function buildMessageCtx(booking: Booking, tenant: Tenant, opts: Omit<Not
   return {
     tenant,
     booking,
-    links: { payment: paymentUrl(booking.id), manage: manageUrl(booking.id), panel: panelBookingUrl(booking.id) },
+    links: {
+      payment: paymentUrl(booking.id),
+      manage: manageUrl(booking.id),
+      panel: panelBookingUrl(booking.id),
+      calendar: booking.status === "confirmed" ? calendarLinks(booking, tenant)?.google : undefined,
+    },
     offsetHours: opts.offsetHours,
     reason: opts.reason,
     previousWhen: opts.previousWhen,
@@ -72,7 +81,9 @@ async function dispatch(event: NotifyEvent, booking: Booking, opts: NotifyOption
     // Las reservas cargadas por Thalia pueden no tener email: en ese caso solo va por WhatsApp.
     if (booking.client.email) {
       const content = clientEmail(event, ctx);
-      tasks.push(email.send({ to: booking.client.email, ...content }).then((r) => ["email", booking.client.email, r]));
+      const ics = CALENDAR_EVENTS.includes(event as ClientEvent) && booking.status === "confirmed" ? calendarLinks(booking, tenant)?.icsContent : undefined;
+      const attachments = ics ? [{ filename: `turno-${booking.code}.ics`, content: ics, contentType: "text/calendar; charset=utf-8; method=PUBLISH" }] : undefined;
+      tasks.push(email.send({ to: booking.client.email, ...content, attachments }).then((r) => ["email", booking.client.email, r]));
     }
     const tpl = WHATSAPP_TEMPLATES[event as ClientEvent];
     if (tpl && WHATSAPP_EVENTS.includes(event as ClientEvent)) {

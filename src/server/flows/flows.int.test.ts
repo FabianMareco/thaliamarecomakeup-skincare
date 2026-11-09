@@ -19,6 +19,7 @@ import {
   markRefunded,
   rejectBooking,
   requestResubmit,
+  resendNotice,
   updateBookingPricing,
 } from "./admin";
 import { runTick } from "./cron";
@@ -564,5 +565,48 @@ describe("Extras, precio de combo y búsqueda de pacientes", () => {
     expect((await searchPatients("lucia")).map((c) => c.name)).toEqual(["Lucía Fernández"]);
     expect((await searchPatients("7000-12")).map((c) => c.phone)).toEqual(["+5491170001234"]);
     expect(await searchPatients("x")).toEqual([]);
+  });
+});
+
+describe("Calendario, mensajes completos y reenvíos", () => {
+  it("la confirmación por email trae el link de Google Calendar y el .ics adjunto", async () => {
+    const { bookingId } = await bookFuture(1, "09:00", "2026-11-10");
+    sent.length = 0;
+    await confirmDepositManually(bookingId, {}, NOW);
+    const mail = sent.find((s) => s.channel === "email" && s.subject?.startsWith("¡Reserva confirmada!"))!;
+    expect(mail.html).toContain("calendar.google.com/calendar/render");
+    expect(mail.attachments).toEqual([expect.stringMatching(/^turno-TM-\d+\.ics$/)]);
+    const view = (await getManageView(manageTokenFor(bookingId), NOW))!;
+    expect(view.calendar?.google).toContain("dates=20261110T120000Z%2F20261110T140000Z");
+  });
+
+  it("el WhatsApp manual lleva todos los datos del turno", async () => {
+    const { manualMessages } = await import("../notify/manual");
+    const { loadTenant } = await import("../repo/tenant");
+    const tenant = await loadTenant();
+    const { bookingId } = await bookFuture(1, "09:00", "2026-11-10");
+    const pay = manualMessages((await getBooking(bookingId))!, tenant, NOW)[0].text;
+    expect(pay).toContain("*Tratamiento:* Limpieza profunda Clásica");
+    expect(pay).toContain("*Día y hora:* Martes 10 de noviembre, 09:00 hs");
+    expect(pay).toContain("*Seña:* $20.000 (pendiente)");
+    expect(pay).toContain("Alias: *thalia.mareco.makeup*");
+    expect(pay).not.toContain("Calle Falsa"); // la dirección exacta solo va con la reserva confirmada
+    await confirmDepositManually(bookingId, {}, NOW);
+    const ok = manualMessages((await getBooking(bookingId))!, tenant, NOW)[0].text;
+    expect(ok).toContain("*Lugar:* Calle Falsa 123, 4° B");
+    expect(ok).toContain("*Seña:* $20.000 (recibida ✅)");
+    expect(ok).toContain("*Saldo en el turno:* $30.000");
+    expect(ok).toMatch(/Agendalo en Google Calendar: http:\/\/localhost:3000\/turnos\/gestionar\/[\w-]+\/google-calendar/);
+  });
+
+  it("Thalia puede reenviar el recordatorio sin alterar los recordatorios programados", async () => {
+    const { bookingId } = await bookFuture(1, "09:00", "2026-11-10");
+    await confirmDepositManually(bookingId, {}, NOW);
+    sent.length = 0;
+    const r = await resendNotice(bookingId, "reminder", NOW);
+    expect(r.channels).toEqual(["email", "WhatsApp"]);
+    expect(sent.find((s) => s.channel === "email")!.subject).toMatch(/^Recordatorio/);
+    expect((await getBooking(bookingId))!.remindersSent).toEqual({});
+    await expect(resendNotice(bookingId, "payment_link", NOW)).rejects.toThrow(/no está esperando la seña/);
   });
 });

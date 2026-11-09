@@ -18,6 +18,7 @@ import { addDaysStr, arDateStr, arLocalToInstant, arTimeStr, mondayOf, weekdayOf
 import { canTransition, InvalidTransitionError, transition, type BookingEvent } from "./transitions";
 import type { Booking, BookingStatus, TemplateSlot, Weekday } from "./types";
 import { eventInterval } from "./makeup";
+import { googleCalendarUrl, icsContent } from "./calendar";
 
 const H = 3600_000;
 const M = 60_000;
@@ -317,6 +318,32 @@ describe("makeup", () => {
   it("ventana del evento desde el inicio hasta la hora de estar lista", () => {
     const w = eventInterval("2026-12-05", "16:00", "18:30");
     expect((w.endAt.getTime() - w.startAt.getTime()) / M).toBe(150);
+  });
+});
+
+describe("calendario", () => {
+  const ev = {
+    uid: "abc@turnos",
+    title: "Limpieza profunda Clásica · Thalia Mareco",
+    start: arLocalToInstant("2026-11-16", "09:00"),
+    end: arLocalToInstant("2026-11-16", "11:00"),
+    details: "Reserva TM-1234.\nSaldo: $30.000, puntual.",
+    location: "Talcahuano 123, 4° B; CABA",
+  };
+  it("arma el link de Google Calendar con el horario en UTC", () => {
+    const url = new URL(googleCalendarUrl(ev));
+    expect(url.hostname).toBe("calendar.google.com");
+    expect(url.searchParams.get("action")).toBe("TEMPLATE");
+    expect(url.searchParams.get("dates")).toBe("20261116T120000Z/20261116T140000Z");
+    expect(url.searchParams.get("location")).toBe("Talcahuano 123, 4° B; CABA");
+  });
+  it("arma un .ics válido, con caracteres escapados y líneas de hasta 75 bytes", () => {
+    const ics = icsContent(ev, new Date("2026-11-10T00:00:00Z"));
+    expect(ics).toContain("DTSTART:20261116T120000Z\r\n");
+    expect(ics).toContain("LOCATION:Talcahuano 123\\, 4° B\\; CABA");
+    expect(ics).toContain("DESCRIPTION:Reserva TM-1234.\\nSaldo: $30.000\\, puntual.");
+    for (const line of ics.split("\r\n")) expect(Buffer.byteLength(line, "utf8")).toBeLessThanOrEqual(75);
+    expect(ics.endsWith("END:VCALENDAR\r\n")).toBe(true);
   });
 });
 

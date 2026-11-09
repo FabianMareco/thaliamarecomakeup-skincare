@@ -10,6 +10,12 @@
   --color-accent: #8a5a4a;
   --color-accent-dark: #6f4637;
   --color-line: #e6d9d1;
+  /* Paleta de los tratamientos (Muted Earthy Tones). */
+  --color-peach: #ffcdb2;
+  --color-salmon: #ffb4a2;
+  --color-rose: #e5989b;
+  --color-mauve: #b5838d;
+  --color-plum: #6d6875;
   --font-sans: var(--font-sans-base);
   --font-display: var(--font-display-base);
 }

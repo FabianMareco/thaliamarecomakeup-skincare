@@ -16,6 +16,7 @@ import {
   confirmManualAction,
   notesAction,
   pricingAction,
+  resendAction,
   refundPendingAction,
   rejectAction,
   rescheduleAction,
@@ -321,6 +322,22 @@ export function BalanceForm({ bookingId }: { bookingId: string }) {
       <div className="w-full">
         <Feedback error={error} />
       </div>
+    </div>
+  );
+}
+
+export function ResendButtons({ bookingId, kinds }: { bookingId: string; kinds: { kind: "reminder" | "payment_link" | "confirmation"; label: string }[] }) {
+  const { pending, error, done, run } = useAction();
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-2">
+        {kinds.map((k) => (
+          <Button key={k.kind} variant="secondary" disabled={pending} onClick={() => run(() => resendAction(bookingId, k.kind), (d) => d.message)}>
+            {k.label}
+          </Button>
+        ))}
+      </div>
+      <Feedback error={error} done={done} />
     </div>
   );
 }

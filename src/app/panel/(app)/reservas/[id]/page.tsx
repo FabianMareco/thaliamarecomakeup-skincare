@@ -22,9 +22,15 @@ import {
   NotesForm,
   PricingForm,
   RescheduleForm,
+  ResendButtons,
 } from "./DetailActions";
 
 export const metadata = { title: "Reserva" };
+
+/** El turno todavía no empezó (la página se renderiza en cada request). */
+function isUpcoming(startAt?: Date): boolean {
+  return !!startAt && startAt.getTime() > Date.now();
+}
 
 export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]">) {
   const { id } = await props.params;
@@ -38,6 +44,15 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
   const pricingEditable = b.line === "skincare" && !["rejected", "expired", "cancelled_refunded", "cancelled_forfeited", "no_show"].includes(b.status);
   const active = ["awaiting_payment", "awaiting_verification", "confirmed"].includes(b.status);
   const messages = manualMessages(b, tenant);
+  const resendKinds: { kind: "reminder" | "payment_link" | "confirmation"; label: string }[] =
+    b.status === "awaiting_payment"
+      ? [{ kind: "payment_link", label: "Reenviar link de pago" }]
+      : b.status === "confirmed"
+        ? [
+            ...(isUpcoming(b.startAt) ? [{ kind: "reminder" as const, label: "Reenviar recordatorio" }] : []),
+            { kind: "confirmation", label: "Reenviar confirmación" },
+          ]
+        : [];
   const actor = { client: "Paciente", admin: "Thalia", system: "Sistema" };
 
   return (
@@ -142,7 +157,7 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
         <Card className="space-y-3">
           <div>
             <h2 className="font-medium">Avisar por WhatsApp</h2>
-            <p className="text-sm text-muted">Abre tu WhatsApp con el mensaje ya escrito; solo tenés que tocar enviar.</p>
+            <p className="text-sm text-muted">Abre tu WhatsApp con el mensaje ya escrito, con todos los datos del turno; solo tenés que tocar enviar.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             {messages.map((m) => (
@@ -157,6 +172,18 @@ export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]
               </a>
             ))}
           </div>
+        </Card>
+      )}
+
+      {resendKinds.length > 0 && (
+        <Card className="space-y-3">
+          <div>
+            <h2 className="font-medium">Reenviar por email</h2>
+            <p className="text-sm text-muted">
+              {b.client.email ? `Se envía a ${b.client.email}.` : "Esta paciente no tiene email cargado: usá los botones de WhatsApp."}
+            </p>
+          </div>
+          {b.client.email && <ResendButtons bookingId={b.id} kinds={resendKinds} />}
         </Card>
       )}
 

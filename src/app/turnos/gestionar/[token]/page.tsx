@@ -28,6 +28,25 @@ export default async function GestionarPage(props: PageProps<"/turnos/gestionar/
         </ButtonLink>
       )}
 
+      {view.calendar && (
+        <div className="grid gap-2 sm:grid-cols-2">
+          <a
+            href={view.calendar.google}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-line bg-white px-5 text-[15px] font-medium hover:bg-sand"
+          >
+            📅 Agregar a Google Calendar
+          </a>
+          <a
+            href={view.calendar.ics}
+            className="inline-flex min-h-11 items-center justify-center rounded-full border border-line bg-white px-5 text-[15px] font-medium hover:bg-sand"
+          >
+            Otro calendario (iPhone, Outlook)
+          </a>
+        </div>
+      )}
+
       {b.status === "confirmed" && b.line === "skincare" && (
         <Alert tone="info">El estudio no tiene sala de espera y los turnos empiezan puntuales. Te pedimos llegar a horario.</Alert>
       )}

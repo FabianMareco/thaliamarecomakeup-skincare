@@ -1,7 +1,10 @@
 import { clientOptions, refundDeadline, type ClientOptions } from "@/lib/domain/availability";
 import { bookingTotal, serviceLabel } from "@/lib/domain/money";
 import type { Booking, BookingStatus, Line, Modality, Tenant } from "@/lib/domain/types";
+import { calendarLinks } from "./calendar";
 import { paymentMethodFor, type PaymentStartResult } from "./payments";
+
+const pickCalendar = (l: ReturnType<typeof calendarLinks>) => (l ? { google: l.google, ics: l.ics } : undefined);
 import { findBookingByToken } from "./repo/bookings";
 import { loadTenant } from "./repo/tenant";
 
@@ -102,6 +105,8 @@ export type ManageView = PaymentView & {
   refundDeadline?: Date;
   cancellationWindowHours: number;
   bookingHorizonDays: number;
+  /** Links para agregar el turno al calendario (solo reservas confirmadas). */
+  calendar?: { google: string; ics: string };
   /** Dirección exacta: solo para reservas confirmadas de skincare presencial o maquillaje en estudio. */
   address?: string;
 };
@@ -120,6 +125,7 @@ export async function getManageView(token: string, now = new Date()): Promise<Ma
     refundDeadline: b.startAt && b.line === "skincare" ? refundDeadline(b.startAt, tenant.skincare.cancellationWindowHours) : undefined,
     cancellationWindowHours: tenant.skincare.cancellationWindowHours,
     bookingHorizonDays: tenant.skincare.bookingHorizonDays,
+    calendar: b.status === "confirmed" ? pickCalendar(calendarLinks(b, tenant)) : undefined,
     address: showAddress ? tenant.privateAddress || undefined : undefined,
   };
 }

@@ -7,8 +7,11 @@ import { env } from "../env";
 
 export type SendResult = { status: "sent" | "skipped" | "failed"; id?: string; error?: string };
 
+export type EmailAttachment = { filename: string; content: string; contentType: string };
+export type EmailMessage = { to: string; subject: string; html: string; text: string; attachments?: EmailAttachment[] };
+
 export interface EmailProvider {
-  send(msg: { to: string; subject: string; html: string; text: string }): Promise<SendResult>;
+  send(msg: EmailMessage): Promise<SendResult>;
 }
 
 export interface WhatsAppProvider {
@@ -18,9 +21,13 @@ export interface WhatsAppProvider {
 
 class ResendEmail implements EmailProvider {
   constructor(private apiKey: string) {}
-  async send(msg: { to: string; subject: string; html: string; text: string }): Promise<SendResult> {
+  async send({ attachments, ...msg }: EmailMessage): Promise<SendResult> {
     try {
-      const { data, error } = await new Resend(this.apiKey).emails.send({ from: env.emailFrom, ...msg });
+      const { data, error } = await new Resend(this.apiKey).emails.send({
+        from: env.emailFrom,
+        ...msg,
+        ...(attachments?.length ? { attachments: attachments.map((a) => ({ filename: a.filename, content: Buffer.from(a.content), contentType: a.contentType })) } : {}),
+      });
       if (error) return { status: "failed", error: error.message };
       return { status: "sent", id: data?.id };
     } catch (e) {
@@ -32,7 +39,7 @@ class ResendEmail implements EmailProvider {
 /** Envío por SMTP; por ejemplo, una cuenta de Gmail con contraseña de aplicación. */
 class SmtpEmail implements EmailProvider {
   constructor(private cfg: { host: string; port: number; user: string; pass: string }) {}
-  async send(msg: { to: string; subject: string; html: string; text: string }): Promise<SendResult> {
+  async send(msg: EmailMessage): Promise<SendResult> {
     try {
       const transport = nodemailer.createTransport({
         host: this.cfg.host,

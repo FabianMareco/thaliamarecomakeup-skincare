@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SlotPicker, type PickerDay } from "@/components/SlotPicker";
-import { Alert, Badge, Button, Card, cx, Field, Input, Row } from "@/components/ui";
+import { categoryTone } from "@/components/palette";
+import { Alert, Button, Card, cx, Field, Input, Row } from "@/components/ui";
 import { formatARS, skincareDeposit } from "@/lib/domain/money";
 import { fmtDateStrLong } from "@/lib/domain/time";
 import type { Modality } from "@/lib/domain/types";
@@ -103,9 +104,12 @@ export function BookingWizard({
 
       {step === "service" && (
         <div className="space-y-8">
-          {categories.map((cat) => (
+          {categories.map((cat, ci) => (
             <section key={cat} className="space-y-3">
-              <h2 className="text-xs font-medium uppercase tracking-[0.18em] text-muted">{cat}</h2>
+              <h2 className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted">
+                <span aria-hidden className={cx("h-2.5 w-2.5 rounded-full", categoryTone(ci).dot)} />
+                {cat}
+              </h2>
               <div className="grid gap-3">
                 {services
                   .filter((s) => s.category === cat)
@@ -116,18 +120,18 @@ export function BookingWizard({
                         key={s.id}
                         type="button"
                         onClick={() => chooseService(s)}
-                        className="rounded-2xl border border-line bg-white p-4 text-left transition-colors hover:border-accent"
+                        className={cx("rounded-2xl border-2 p-4 text-left transition-colors hover:border-plum", categoryTone(ci).card)}
                       >
                         <div className="flex flex-wrap items-center gap-2">
-                          {s.badge && <Badge tone="accent">{s.badge}</Badge>}
-                          {s.modality === "virtual" && <Badge tone="info">Virtual</Badge>}
+                          {s.badge && <span className="rounded-full bg-plum px-2.5 py-0.5 text-xs font-medium text-white">{s.badge}</span>}
+                          {s.modality === "virtual" && <span className="rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-plum">Virtual</span>}
                         </div>
                         <p className="mt-1.5 text-[16px] font-medium leading-snug">{s.name}</p>
                         {s.description && <p className="mt-1 text-sm text-muted">{s.description}</p>}
                         <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
-                          <span className="text-base font-semibold">{formatARS(s.price)}</span>
-                          <span className="text-muted">Seña {formatARS(m.deposit)}</span>
-                          <span className="text-muted">Saldo {formatARS(m.balance)}</span>
+                          <span className="text-lg font-semibold text-plum">{formatARS(s.price)}</span>
+                          <span className="text-ink/80">Seña {formatARS(m.deposit)}</span>
+                          <span className="text-ink/80">Saldo {formatARS(m.balance)}</span>
                         </div>
                       </button>
                     );

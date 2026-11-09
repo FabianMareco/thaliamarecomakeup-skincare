@@ -57,7 +57,7 @@ export const WHATSAPP_EVENTS: ClientEvent[] = [
 export type MessageCtx = {
   tenant: Tenant;
   booking: Booking;
-  links: { payment: string; manage: string; panel: string };
+  links: { payment: string; manage: string; panel: string; calendar?: string };
   offsetHours?: number;
   reason?: string;
   previousWhen?: string;
@@ -94,6 +94,13 @@ function balanceText(b: Booking): string {
   if (b.balance.amount <= 0) return "No queda saldo por abonar.";
   const where = b.line === "makeup" ? "el día del evento" : "en el turno";
   return `Saldo a abonar ${where}: ${formatARS(b.balance.amount)}${travel}.`;
+}
+
+function calendarLine(ctx: MessageCtx): string[] {
+  if (!ctx.links.calendar) return [];
+  return [
+    `📅 <a href="${esc(ctx.links.calendar)}" style="color:#8a5a4a">Agregar a Google Calendar</a>. También te mandamos el turno como archivo adjunto para cualquier otro calendario.`,
+  ];
 }
 
 function layout(ctx: MessageCtx, title: string, paragraphs: string[], cta?: { label: string; url: string }): string {
@@ -170,6 +177,7 @@ export function clientEmail(event: ClientEvent, ctx: MessageCtx): EmailContent {
         b.line === "skincare"
           ? `Desde el link podés ver tu reserva, reprogramar o cancelar con ${tenant.skincare.cancellationWindowHours} hs o más de anticipación.`
           : "Desde el link podés ver tu reserva. Recordá que la seña no se reintegra.",
+        ...calendarLine(ctx),
       ], { label: "Ver mi reserva", url: links.manage });
 
     case "rejected":
@@ -204,6 +212,7 @@ export function clientEmail(event: ClientEvent, ctx: MessageCtx): EmailContent {
         esc(locationText(ctx)),
         esc(balanceText(b)),
         ...(b.line === "skincare" ? [PUNCTUALITY] : []),
+        ...calendarLine(ctx),
       ], { label: "Ver mi reserva", url: links.manage });
     }
 
@@ -213,6 +222,7 @@ export function clientEmail(event: ClientEvent, ctx: MessageCtx): EmailContent {
         ctx.previousWhen ? `Antes era el ${esc(ctx.previousWhen)}.` : "",
         esc(locationText(ctx)),
         PUNCTUALITY,
+        ...calendarLine(ctx),
       ].filter(Boolean), { label: "Ver mi reserva", url: links.manage });
 
     case "cancelled":

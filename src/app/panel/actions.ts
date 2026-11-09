@@ -21,8 +21,10 @@ import {
   registerBalance,
   rejectBooking,
   requestResubmit,
+  resendNotice,
   saveInternalNotes,
   updateBookingPricing,
+  type ResendKind,
 } from "@/server/flows/admin";
 import { acceptMakeup, type OverlapWarning } from "@/server/flows/makeup";
 import { createAdminBooking } from "@/server/flows/manualBooking";
@@ -114,6 +116,17 @@ export const attendanceAction = async (bookingId: string, attended: boolean) =>
   admin(async () => void (await markAttendance(id(bookingId), !!attended)));
 export const balanceAction = async (bookingId: string, method: string) =>
   admin(async () => void (await registerBalance(id(bookingId), String(method ?? ""))));
+export async function resendAction(bookingId: string, kind: ResendKind): Promise<ActionResult<{ message: string }>> {
+  return admin(async () => {
+    if (!["reminder", "payment_link", "confirmation"].includes(kind)) throw new UserError("Aviso inválido");
+    const { channels } = await resendNotice(id(bookingId), kind);
+    if (channels.length === 0) {
+      throw new UserError("No se pudo enviar automáticamente (la paciente no tiene email o el email no está configurado). Mandalo con el botón de WhatsApp.");
+    }
+    return { message: `Enviado por ${channels.join(" y ")}.` };
+  });
+}
+
 export const pricingAction = async (bookingId: string, input: PricingInput) =>
   admin(async () => void (await updateBookingPricing(id(bookingId), input)));
 export const notesAction = async (bookingId: string, notes: string) =>

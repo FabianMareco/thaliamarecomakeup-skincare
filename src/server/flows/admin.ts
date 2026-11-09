@@ -317,6 +317,34 @@ export async function updateBookingPricing(bookingId: string, raw: PricingInput,
   });
 }
 
+export type ResendKind = "reminder" | "payment_link" | "confirmation";
+
+/**
+ * Reenvía un aviso a la paciente (email y, si está activo, WhatsApp
+ * automático). No cambia la reserva ni los recordatorios programados.
+ */
+export async function resendNotice(bookingId: string, kind: ResendKind, now = new Date()): Promise<{ channels: string[] }> {
+  const b = requireBooking(await getBooking(bookingId));
+  const tenant = await loadTenant();
+  if (kind === "payment_link") {
+    if (b.status !== "awaiting_payment") throw new UserError("Esta reserva no está esperando la seña.");
+    const approved = b.line === "makeup" || b.history.some((h) => h.from === "awaiting_approval");
+    const r = await notify(approved ? "payment_link_approved" : "payment_link_created", b, { tenant });
+    return { channels: deliveredChannels(r) };
+  }
+  if (b.status !== "confirmed") throw new UserError("La reserva no está confirmada.");
+  if (kind === "confirmation") return { channels: deliveredChannels(await notify("confirmed", b, { tenant })) };
+  if (!b.startAt || b.startAt.getTime() <= now.getTime()) throw new UserError("El turno ya pasó.");
+  const hoursLeft = (b.startAt.getTime() - now.getTime()) / 3600_000;
+  const window = tenant.skincare.cancellationWindowHours;
+  const offsetHours = b.line === "skincare" && hoursLeft > window ? window + 1 : 24;
+  return { channels: deliveredChannels(await notify("reminder", b, { tenant, offsetHours })) };
+}
+
+function deliveredChannels(r: { email?: { status: string }; whatsapp?: { status: string } }): string[] {
+  return [r.email?.status === "sent" ? "email" : null, r.whatsapp?.status === "sent" ? "WhatsApp" : null].filter((x): x is string => !!x);
+}
+
 export async function saveInternalNotes(bookingId: string, notes: string, now = new Date()): Promise<void> {
   await db().runTransaction(async (tx) => {
     const cur = requireBooking(await txGetBooking(tx, bookingId));
