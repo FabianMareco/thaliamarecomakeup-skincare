@@ -60,7 +60,7 @@ npm run lint && npm run typecheck
 6. **Cron cada 15 minutos.** Vercel Hobby solo permite crons diarios. Opciones:
    - Vercel Pro: agregar `vercel.json` con `{"crons":[{"path":"/api/cron/tick","schedule":"*/15 * * * *"}]}` (Vercel manda `CRON_SECRET` solo).
    - Programador externo (ej. cron-job.org): `GET https://<dominio>/api/cron/tick` con header `Authorization: Bearer <CRON_SECRET>`.
-7. WhatsApp: mientras Meta no apruebe el número y las plantillas, dejar `WHATSAPP_MODE=disabled` (solo se registra en el log; los emails incluyen botón de WhatsApp). Las plantillas a dar de alta (Utility, `es_AR`) están en `src/config/whatsapp-templates.ts` con su texto de referencia.
+7. WhatsApp: mientras Meta no apruebe el número y las plantillas, dejar `WHATSAPP_MODE=disabled` (solo se registra en el log; los emails incluyen botón de WhatsApp). La guía completa y las plantillas a dar de alta (Utility, `es_AR`) están en [`docs/whatsapp.md`](docs/whatsapp.md).
 
 ### Copias de seguridad
 
