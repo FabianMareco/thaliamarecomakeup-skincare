@@ -10,13 +10,13 @@ export function useAction() {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  const run = (fn: () => Promise<ActionResult<unknown>>, okMsg?: string, onOk?: () => void) =>
+  const run = <T,>(fn: () => Promise<ActionResult<T>>, okMsg?: string | ((data: T) => string), onOk?: () => void) =>
     start(async () => {
       setError(null);
       setDone(null);
       const r = await fn();
       if (r.ok) {
-        if (okMsg) setDone(okMsg);
+        if (okMsg) setDone(typeof okMsg === "function" ? okMsg(r.data) : okMsg);
         onOk?.();
       } else setError(r.error);
     });

@@ -41,6 +41,29 @@ export const makeupRequestSchema = clientDataSchema
   });
 export type MakeupRequestInput = z.input<typeof makeupRequestSchema>;
 
+/** Reserva cargada a mano por Thalia (por ejemplo, una clienta que reservó por WhatsApp). */
+export const adminBookingSchema = z
+  .object({
+    serviceId: z.string().min(1, "Elegí el tratamiento").max(150),
+    slotId: z.string().regex(/^\d{4}-\d{2}-\d{2}_\d{4}$/).optional(),
+    newSlot: z
+      .object({
+        date: dateStr,
+        time: timeStr,
+        durationMin: z.coerce.number().int().min(10).max(600),
+        modality: z.enum(["in_person", "virtual"]),
+      })
+      .optional(),
+    name: trimmed(80).min(2, "Ingresá el nombre de la clienta"),
+    phone: trimmed(30).min(6, "Ingresá el WhatsApp de la clienta"),
+    email: z.union([z.literal(""), trimmed(120).toLowerCase().pipe(z.email("El email no es válido"))]).default(""),
+    firstVisit: z.boolean().default(false),
+    depositPaid: z.boolean(),
+    notifyClient: z.boolean().default(true),
+  })
+  .refine((d) => !!d.slotId !== !!d.newSlot, { message: "Elegí un horario", path: ["slotId"] });
+export type AdminBookingInput = z.input<typeof adminBookingSchema>;
+
 export const acceptMakeupSchema = z.object({
   finalPrice: z.coerce.number().int().min(0),
   travelFee: z.coerce.number().int().min(0).default(0),

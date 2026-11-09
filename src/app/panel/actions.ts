@@ -6,7 +6,7 @@ import { z } from "zod";
 import { validateTemplate } from "@/lib/domain/slots";
 import { isValidTimeStr } from "@/lib/domain/time";
 import { WEEKDAYS, type Service, type Tenant } from "@/lib/domain/types";
-import type { AcceptMakeupInput } from "@/lib/schemas";
+import type { AcceptMakeupInput, AdminBookingInput } from "@/lib/schemas";
 import { assertAdmin, createSession, destroySession } from "@/server/auth";
 import { toResult, UserError, type ActionResult } from "@/server/errors";
 import {
@@ -24,6 +24,7 @@ import {
   saveInternalNotes,
 } from "@/server/flows/admin";
 import { acceptMakeup, type OverlapWarning } from "@/server/flows/makeup";
+import { createAdminBooking } from "@/server/flows/manualBooking";
 import { closeDay, copyPreviousWeek, createSlot, deleteSlot, generateRange, saveWeeklyTemplate, updateSlot } from "@/server/flows/schedule";
 import { availabilityFor, type AvailabilityDay } from "@/server/flows/skincare";
 import { arDateStr } from "@/lib/domain/time";
@@ -113,6 +114,13 @@ export const balanceAction = async (bookingId: string, method: string) =>
   admin(async () => void (await registerBalance(id(bookingId), String(method ?? ""))));
 export const notesAction = async (bookingId: string, notes: string) =>
   admin(async () => void (await saveInternalNotes(id(bookingId), String(notes ?? ""))));
+
+export async function adminBookingAction(input: AdminBookingInput): Promise<ActionResult<{ bookingId: string; status: string }>> {
+  return admin(async () => {
+    const b = await createAdminBooking(input);
+    return { bookingId: b.id, status: b.status };
+  });
+}
 
 // ---- Horarios ----
 

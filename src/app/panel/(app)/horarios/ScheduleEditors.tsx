@@ -7,7 +7,17 @@ import { Badge, Button, cx, Input, Select } from "@/components/ui";
 import type { Modality, SlotStatus, TemplateSlot, Weekday } from "@/lib/domain/types";
 import { WEEKDAYS } from "@/lib/domain/types";
 import { Feedback, useAction } from "../../_components/actions";
-import { closeDayAction, copyWeekAction, createSlotAction, deleteSlotAction, generateRangeAction, saveTemplateAction, updateSlotAction } from "../../actions";
+import {
+  adminBookingAction,
+  closeDayAction,
+  copyWeekAction,
+  createSlotAction,
+  deleteSlotAction,
+  generateRangeAction,
+  saveTemplateAction,
+  updateSlotAction,
+} from "../../actions";
+import { BookingFields, emptyBookingFields, type BookingFieldsValue, type ServiceOption } from "./BookingFields";
 
 const DAY_LABEL: Record<Weekday, string> = { mon: "Lunes", tue: "Martes", wed: "Miércoles", thu: "Jueves", fri: "Viernes", sat: "Sábado", sun: "Domingo" };
 const MODALITY_LABEL: Record<Modality, string> = { in_person: "Presencial", virtual: "Virtual" };
@@ -68,26 +78,45 @@ export function DateJump({ date }: { date: string }) {
   );
 }
 
-type DaySlot = { id: string; time: string; durationMin: number; modality: Modality; status: SlotStatus; bookingId: string | null };
+type DaySlot = {
+  id: string;
+  time: string;
+  durationMin: number;
+  modality: Modality;
+  status: SlotStatus;
+  bookingId: string | null;
+  clientName?: string;
+  serviceName?: string;
+};
 
-export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
+export function DayEditor({ date, slots, services }: { date: string; slots: DaySlot[]; services: ServiceOption[] }) {
   // Cada zona tiene su propio estado, así los mensajes aparecen junto a lo que se tocó.
-  const list = useAction(); // editar y borrar
+  const list = useAction(); // editar, borrar y reservar un horario de la lista
   const add = useAction(); // agregar
   const day = useAction(); // copiar semana y cerrar día
   const pending = list.pending || add.pending || day.pending;
-  const [editing, setEditing] = useState<string | null>(null);
+  // Qué horario de la lista se está editando o reservando.
+  const [open, setOpen] = useState<{ id: string; mode: "edit" | "book" } | null>(null);
   const [form, setForm] = useState({ time: "", durationMin: "120", modality: "in_person" as Modality });
   const [edit, setEdit] = useState({ time: "", durationMin: "", modality: "in_person" as Modality });
+  const [book, setBook] = useState<BookingFieldsValue>(emptyBookingFields);
+  const [addBooked, setAddBooked] = useState(false);
+  const [newBook, setNewBook] = useState<BookingFieldsValue>(emptyBookingFields);
+
+  const close = () => {
+    setOpen(null);
+    list.setError(null);
+  };
+  const bookingMsg = (status: string) => (status === "confirmed" ? "Reserva cargada y confirmada" : "Reserva cargada: queda esperando la seña");
 
   return (
     <div className="space-y-4">
       {slots.length === 0 && <p className="text-sm text-muted">No hay horarios publicados este día.</p>}
-      {!editing && <Feedback error={list.error} />}
+      {!open && <Feedback error={list.error} done={list.done} />}
       <ul className="space-y-2">
         {slots.map((s) => (
           <li key={s.id} className="rounded-xl border border-line p-3">
-            {editing === s.id ? (
+            {open?.id === s.id && open.mode === "edit" ? (
               <div className="space-y-2">
                 <div className="grid grid-cols-3 gap-2">
                   <Input type="time" value={edit.time} onChange={(e) => setEdit({ ...edit, time: e.target.value })} aria-label="Hora" />
@@ -99,33 +128,61 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
                 </div>
                 <Feedback error={list.error} />
                 <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setEditing(null);
-                      list.setError(null);
-                    }}
-                    disabled={pending}
-                  >
+                  <Button variant="secondary" onClick={close} disabled={pending}>
                     Cancelar
                   </Button>
                   <Button
                     className="flex-1"
                     disabled={pending}
                     onClick={() =>
-                      list.run(() => updateSlotAction(s.id, { time: edit.time, durationMin: Number(edit.durationMin), modality: edit.modality }), undefined, () => setEditing(null))
+                      list.run(() => updateSlotAction(s.id, { time: edit.time, durationMin: Number(edit.durationMin), modality: edit.modality }), undefined, () => setOpen(null))
                     }
                   >
                     Guardar
                   </Button>
                 </div>
               </div>
+            ) : open?.id === s.id && open.mode === "book" ? (
+              <div className="space-y-3">
+                <p className="font-medium">
+                  Reservar {s.time} <span className="text-sm font-normal text-muted">· {s.durationMin} min · {MODALITY_LABEL[s.modality]}</span>
+                </p>
+                <BookingFields value={book} onChange={setBook} services={services} idPrefix={`book-${s.id}`} />
+                <Feedback error={list.error} />
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={close} disabled={pending}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    disabled={pending}
+                    onClick={() =>
+                      list.run(
+                        () => adminBookingAction({ ...book, slotId: s.id }),
+                        (d) => bookingMsg(d.status),
+                        () => {
+                          setOpen(null);
+                          setBook(emptyBookingFields);
+                        },
+                      )
+                    }
+                  >
+                    Guardar reserva
+                  </Button>
+                </div>
+              </div>
             ) : (
-              <div className="flex items-center justify-between gap-2">
-                <div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
                   <p className="font-medium tabular-nums">
                     {s.time} <span className="text-sm font-normal text-muted">· {s.durationMin} min · {MODALITY_LABEL[s.modality]}</span>
                   </p>
+                  {s.clientName && (
+                    <p className="truncate text-sm">
+                      {s.clientName}
+                      {s.serviceName ? ` · ${s.serviceName}` : ""}
+                    </p>
+                  )}
                   <div className="mt-1">
                     {s.status === "open" ? (
                       <Badge tone="ok">Libre</Badge>
@@ -139,12 +196,23 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
                 {s.status === "open" && (
                   <div className="flex gap-1">
                     <Button
+                      variant="secondary"
+                      className="px-3"
+                      onClick={() => {
+                        list.setError(null);
+                        setBook(emptyBookingFields);
+                        setOpen({ id: s.id, mode: "book" });
+                      }}
+                    >
+                      Reservar
+                    </Button>
+                    <Button
                       variant="ghost"
                       className="px-3"
                       onClick={() => {
                         list.setError(null);
-                        setEditing(s.id);
                         setEdit({ time: s.time, durationMin: String(s.durationMin), modality: s.modality });
+                        setOpen({ id: s.id, mode: "edit" });
                       }}
                     >
                       Editar
@@ -161,12 +229,23 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
       </ul>
 
       <form
-        className="space-y-2 rounded-xl bg-sand/50 p-3"
+        className="space-y-3 rounded-xl bg-sand/50 p-3"
         onSubmit={(e) => {
           e.preventDefault();
-          add.run(() => createSlotAction({ date, time: form.time, durationMin: Number(form.durationMin), modality: form.modality }), "Horario agregado", () =>
-            setForm({ ...form, time: "" }),
-          );
+          const slot = { date, time: form.time, durationMin: Number(form.durationMin), modality: form.modality };
+          if (addBooked) {
+            add.run(
+              () => adminBookingAction({ ...newBook, newSlot: slot }),
+              (d) => bookingMsg(d.status),
+              () => {
+                setForm({ ...form, time: "" });
+                setNewBook(emptyBookingFields);
+                setAddBooked(false);
+              },
+            );
+          } else {
+            add.run(() => createSlotAction(slot), "Horario agregado", () => setForm({ ...form, time: "" }));
+          }
         }}
       >
         <p className="text-sm font-medium">Agregar horario</p>
@@ -179,20 +258,21 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
           </Select>
         </div>
         <p className="text-xs text-muted">Hora · duración (min) · modalidad</p>
+        <label className="flex items-center gap-2 text-[15px]">
+          <input type="checkbox" className="h-5 w-5 accent-[var(--color-accent)]" checked={addBooked} onChange={(e) => setAddBooked(e.target.checked)} />
+          Ya está reservado (cargar los datos de la clienta)
+        </label>
+        {addBooked && <BookingFields value={newBook} onChange={setNewBook} services={services} idPrefix="new" />}
         <Feedback error={add.error} done={add.done} />
         <Button type="submit" className="w-full" disabled={pending}>
-          Agregar
+          {addBooked ? "Agregar horario reservado" : "Agregar"}
         </Button>
       </form>
 
       <Feedback error={day.error} done={day.done} />
 
       <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant="secondary"
-          disabled={pending}
-          onClick={() => day.run(() => copyWeekAction(date), "Semana anterior copiada a esta semana")}
-        >
+        <Button variant="secondary" disabled={pending} onClick={() => day.run(() => copyWeekAction(date), "Semana anterior copiada a esta semana")}>
           Copiar semana anterior
         </Button>
         <Button

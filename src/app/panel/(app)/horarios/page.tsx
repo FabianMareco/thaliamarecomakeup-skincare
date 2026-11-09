@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { Card } from "@/components/ui";
-import { addDaysStr, arDateStr, fmtDateStrLong, isValidDateStr, mondayOf } from "@/lib/domain/time";
-import { listSlotsBetween } from "@/server/repo/bookings";
+import { addDaysStr, arDateStr, arLocalToInstant, fmtDateStrLong, isValidDateStr, mondayOf } from "@/lib/domain/time";
+import { listBookingsBetween, listSlotsBetween } from "@/server/repo/bookings";
+import { listServices } from "@/server/repo/services";
 import { getTenant } from "@/server/repo/tenant";
 import { DateJump, DayEditor, GeneratePanel, TemplateEditor } from "./ScheduleEditors";
 
@@ -11,7 +12,13 @@ export default async function HorariosPage(props: PageProps<"/panel/horarios">) 
   const sp = await props.searchParams;
   const today = arDateStr(new Date());
   const date = typeof sp.date === "string" && isValidDateStr(sp.date) ? sp.date : today;
-  const [tenant, slots] = await Promise.all([getTenant(), listSlotsBetween(date, date)]);
+  const [tenant, slots, services, bookings] = await Promise.all([
+    getTenant(),
+    listSlotsBetween(date, date),
+    listServices({ line: "skincare" }),
+    listBookingsBetween(arLocalToInstant(date, "00:00"), arLocalToInstant(addDaysStr(date, 1), "00:00")),
+  ]);
+  const bookingById = new Map(bookings.map((b) => [b.id, b]));
   const thisMonday = mondayOf(today);
 
   return (
@@ -50,7 +57,10 @@ export default async function HorariosPage(props: PageProps<"/panel/horarios">) 
             modality: s.modality,
             status: s.status,
             bookingId: s.bookingId,
+            clientName: s.bookingId ? bookingById.get(s.bookingId)?.client.name : undefined,
+            serviceName: s.bookingId ? bookingById.get(s.bookingId)?.service.name : undefined,
           }))}
+          services={services.map((sv) => ({ id: sv.id, name: sv.name, price: sv.price, durationMin: sv.durationMin, active: sv.active }))}
         />
       </Card>
 

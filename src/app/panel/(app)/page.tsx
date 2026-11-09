@@ -93,6 +93,16 @@ export default async function PendientesPage() {
         </div>
       </Section>
 
+      {l.unpaidManual.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="font-display text-xl">Reservas cargadas por vos, esperando la seña</h2>
+          <p className="text-sm text-muted">No vencen solas. Cuando recibas la seña, entrá a la reserva y tocá &ldquo;Confirmar seña recibida&rdquo;.</p>
+          {l.unpaidManual.map((b) => (
+            <BookingRow key={b.id} b={b} extra={<p className="mt-2 text-sm text-muted">Seña: {money(b.deposit.amount)}</p>} />
+          ))}
+        </section>
+      )}
+
       {l.expiredMakeup.length > 0 && (
         <section className="space-y-3">
           <h2 className="font-display text-xl">Maquillaje vencido sin comprobante (últimos 7 días)</h2>

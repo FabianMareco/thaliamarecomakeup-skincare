@@ -65,8 +65,11 @@ async function dispatch(event: NotifyEvent, booking: Booking, opts: NotifyOption
       tasks.push(email.send({ to, ...content }).then((r) => ["email", to, r]));
     }
   } else {
-    const content = clientEmail(event, ctx);
-    tasks.push(email.send({ to: booking.client.email, ...content }).then((r) => ["email", booking.client.email, r]));
+    // Las reservas cargadas por Thalia pueden no tener email: en ese caso solo va por WhatsApp.
+    if (booking.client.email) {
+      const content = clientEmail(event, ctx);
+      tasks.push(email.send({ to: booking.client.email, ...content }).then((r) => ["email", booking.client.email, r]));
+    }
     const tpl = WHATSAPP_TEMPLATES[event as ClientEvent];
     if (tpl && WHATSAPP_EVENTS.includes(event as ClientEvent)) {
       tasks.push(

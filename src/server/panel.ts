@@ -10,11 +10,13 @@ export type PendingLists = {
   makeupRequests: Booking[];
   refunds: Booking[];
   expiredMakeup: Booking[];
+  /** Reservas cargadas por Thalia que siguen esperando la seña (no vencen solas). */
+  unpaidManual: Booking[];
 };
 
 export async function pendingLists(now = new Date()): Promise<PendingLists> {
   const [active, refunds, expired] = await Promise.all([
-    listBookingsByStatus(["awaiting_verification", "awaiting_approval", "requested"]),
+    listBookingsByStatus(["awaiting_verification", "awaiting_approval", "requested", "awaiting_payment"]),
     listBookingsByDepositStatus("refund_pending"),
     listBookingsByStatus(["expired"]),
   ]);
@@ -27,6 +29,9 @@ export async function pendingLists(now = new Date()): Promise<PendingLists> {
       .sort((a, b) => (a.approvalDeadline?.getTime() ?? 0) - (b.approvalDeadline?.getTime() ?? 0)),
     makeupRequests: active.filter((b) => b.status === "requested").sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()),
     refunds: refunds.sort((a, b) => a.updatedAt.getTime() - b.updatedAt.getTime()),
+    unpaidManual: active
+      .filter((b) => b.status === "awaiting_payment" && !b.deposit.receiptUploadDeadline)
+      .sort((a, b) => (a.startAt?.getTime() ?? 0) - (b.startAt?.getTime() ?? 0)),
     expiredMakeup: expired
       .filter((b) => b.line === "makeup" && b.updatedAt.getTime() >= weekAgo)
       .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()),

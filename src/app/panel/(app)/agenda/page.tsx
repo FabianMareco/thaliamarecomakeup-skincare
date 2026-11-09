@@ -24,7 +24,7 @@ function Item({ item }: { item: AgendaItem }) {
           <p className="font-medium tabular-nums">
             {s.time} <span className="text-xs font-normal text-muted">· {s.durationMin} min{s.modality === "virtual" ? " · virtual" : ""}</span>
           </p>
-          <span className="text-xs text-muted">{label}</span>
+          <span className="text-xs text-muted">{s.status === "open" ? "Libre · reservar ›" : label}</span>
         </div>
         {b && (
           <p className="truncate text-sm">
@@ -33,7 +33,8 @@ function Item({ item }: { item: AgendaItem }) {
         )}
       </div>
     );
-    return b ? <Link href={`/panel/reservas/${b.id}`}>{body}</Link> : body;
+    // Un horario libre lleva al editor del día, donde se puede reservar.
+    return <Link href={b ? `/panel/reservas/${b.id}` : `/panel/horarios?date=${s.date}`}>{body}</Link>;
   }
   const b = item.booking;
   return (

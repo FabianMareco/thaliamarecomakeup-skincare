@@ -22,6 +22,7 @@ import {
 import { runTick } from "./cron";
 import { acceptMakeup, createMakeupRequest } from "./makeup";
 import { cancelByClient, rescheduleByClient } from "./manage";
+import { createAdminBooking } from "./manualBooking";
 import { uploadReceipt } from "./receipts";
 import { createSkincareBooking, getAvailability } from "./skincare";
 import { closeDay, createSlot, deleteSlot, generateRange, updateSlot } from "./schedule";
@@ -447,5 +448,51 @@ describe("Fase 2 — agenda", () => {
     const again = await generateRange("2026-11-16", "2026-11-22");
     expect(again.toCreate).toHaveLength(0);
     expect(again.skipped).toHaveLength(24);
+  });
+});
+
+describe("Reservas cargadas por Thalia", () => {
+  const base = { serviceId: LIMPIEZA, name: "Marta Ruiz", phone: "11 6000-0001", email: "", firstVisit: false };
+
+  it("en un horario libre, con la seña recibida: queda confirmada y el horario reservado", async () => {
+    const slot = await putSlot({ date: "2026-11-10", time: "09:00", durationMin: 120, modality: "in_person" });
+    const b = await createAdminBooking({ ...base, slotId: slot.id, depositPaid: true, notifyClient: true }, NOW);
+    expect(b).toMatchObject({ status: "confirmed", deposit: { status: "verified", amount: 20000 }, balance: { amount: 30000 }, client: { phone: "+5491160000001", email: "" } });
+    expect(b.history[0]).toMatchObject({ by: "admin", note: "Cargada por Thalia" });
+    expect(await getSlot(slot.id)).toMatchObject({ status: "booked", bookingId: b.id, heldUntil: null });
+    // Sin email: el aviso va solo por WhatsApp.
+    expect(sent.map((s) => s.channel + ":" + (s.template ?? ""))).toEqual(["whatsapp:turno_confirmado"]);
+    expect((await getClient("+5491160000001"))!.bookingsCount).toBe(1);
+  });
+
+  it("en un horario nuevo, sin seña: queda esperando la seña y el cron no la vence", async () => {
+    const b = await createAdminBooking(
+      { ...base, email: "marta@example.com", newSlot: { date: "2026-11-12", time: "18:00", durationMin: 60, modality: "in_person" }, depositPaid: false, notifyClient: false },
+      NOW,
+    );
+    expect(b).toMatchObject({ status: "awaiting_payment", slotId: "2026-11-12_1800", deposit: { status: "pending" } });
+    expect(b.deposit.receiptUploadDeadline).toBeUndefined();
+    expect(await getSlot("2026-11-12_1800")).toMatchObject({ status: "held", bookingId: b.id, heldUntil: null });
+    expect(sent).toEqual([]);
+    await runTick(new Date(NOW.getTime() + 5 * 24 * H));
+    expect((await getBooking(b.id))!.status).toBe("awaiting_payment");
+    // Ese horario no aparece disponible para otras clientas.
+    const avail = await getAvailability(LIMPIEZA, NOW);
+    expect(avail.flatMap((d) => d.slots.map((s) => s.id))).not.toContain("2026-11-12_1800");
+    // Cuando llega la seña, Thalia la confirma.
+    const done = await confirmDepositManually(b.id, {}, NOW);
+    expect(done.status).toBe("confirmed");
+    expect((await getSlot("2026-11-12_1800"))!.status).toBe("booked");
+  });
+
+  it("rechaza horarios ocupados o superpuestos y datos inválidos", async () => {
+    const slot = await putSlot({ date: "2026-11-10", time: "09:00", durationMin: 120, modality: "in_person" });
+    await createAdminBooking({ ...base, slotId: slot.id, depositPaid: true }, NOW);
+    await expect(createAdminBooking({ ...base, phone: "11 6000-0002", slotId: slot.id, depositPaid: true }, NOW)).rejects.toThrow(/ya tiene una reserva/);
+    await expect(
+      createAdminBooking({ ...base, newSlot: { date: "2026-11-10", time: "10:00", durationMin: 60, modality: "in_person" }, depositPaid: true }, NOW),
+    ).rejects.toThrow(/superpone/);
+    await expect(createAdminBooking({ ...base, phone: "123", slotId: slot.id, depositPaid: true }, NOW)).rejects.toThrow(/WhatsApp/);
+    await expect(createAdminBooking({ ...base, depositPaid: true }, NOW)).rejects.toThrow(/Elegí un horario/);
   });
 });
