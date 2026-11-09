@@ -3,7 +3,7 @@ import { Card } from "@/components/ui";
 import { addDaysStr, arDateStr, fmtDateStrLong, isValidDateStr, mondayOf } from "@/lib/domain/time";
 import { listSlotsBetween } from "@/server/repo/bookings";
 import { getTenant } from "@/server/repo/tenant";
-import { DayEditor, GeneratePanel, TemplateEditor } from "./ScheduleEditors";
+import { DateJump, DayEditor, GeneratePanel, TemplateEditor } from "./ScheduleEditors";
 
 export const metadata = { title: "Horarios" };
 
@@ -39,11 +39,9 @@ export default async function HorariosPage(props: PageProps<"/panel/horarios">) 
             ›
           </Link>
         </div>
-        <form className="flex gap-2" action="/panel/horarios">
-          <input type="date" name="date" defaultValue={date} className="flex-1 rounded-xl border border-line bg-white px-3 py-2" aria-label="Ir a fecha" />
-          <button className="rounded-full border border-line px-4 text-sm">Ir</button>
-        </form>
+        <DateJump date={date} />
         <DayEditor
+          key={date}
           date={date}
           slots={slots.map((s) => ({
             id: s.id,

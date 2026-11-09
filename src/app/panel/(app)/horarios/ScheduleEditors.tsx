@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Badge, Button, cx, Input, Select } from "@/components/ui";
 import type { Modality, SlotStatus, TemplateSlot, Weekday } from "@/lib/domain/types";
@@ -52,10 +53,29 @@ export function GeneratePanel({ ranges, today }: { ranges: { label: string; from
   );
 }
 
+/** Selector de fecha que cambia de día apenas se elige otra fecha. */
+export function DateJump({ date }: { date: string }) {
+  const router = useRouter();
+  return (
+    <Input
+      type="date"
+      value={date}
+      aria-label="Ir a fecha"
+      onChange={(e) => {
+        if (e.target.value) router.push(`/panel/horarios?date=${e.target.value}`);
+      }}
+    />
+  );
+}
+
 type DaySlot = { id: string; time: string; durationMin: number; modality: Modality; status: SlotStatus; bookingId: string | null };
 
 export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
-  const { pending, error, done, run } = useAction();
+  // Cada zona tiene su propio estado, así los mensajes aparecen junto a lo que se tocó.
+  const list = useAction(); // editar y borrar
+  const add = useAction(); // agregar
+  const day = useAction(); // copiar semana y cerrar día
+  const pending = list.pending || add.pending || day.pending;
   const [editing, setEditing] = useState<string | null>(null);
   const [form, setForm] = useState({ time: "", durationMin: "120", modality: "in_person" as Modality });
   const [edit, setEdit] = useState({ time: "", durationMin: "", modality: "in_person" as Modality });
@@ -63,6 +83,7 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
   return (
     <div className="space-y-4">
       {slots.length === 0 && <p className="text-sm text-muted">No hay horarios publicados este día.</p>}
+      {!editing && <Feedback error={list.error} />}
       <ul className="space-y-2">
         {slots.map((s) => (
           <li key={s.id} className="rounded-xl border border-line p-3">
@@ -76,15 +97,23 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
                     <option value="virtual">Virtual</option>
                   </Select>
                 </div>
+                <Feedback error={list.error} />
                 <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => setEditing(null)} disabled={pending}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setEditing(null);
+                      list.setError(null);
+                    }}
+                    disabled={pending}
+                  >
                     Cancelar
                   </Button>
                   <Button
                     className="flex-1"
                     disabled={pending}
                     onClick={() =>
-                      run(() => updateSlotAction(s.id, { time: edit.time, durationMin: Number(edit.durationMin), modality: edit.modality }), undefined, () => setEditing(null))
+                      list.run(() => updateSlotAction(s.id, { time: edit.time, durationMin: Number(edit.durationMin), modality: edit.modality }), undefined, () => setEditing(null))
                     }
                   >
                     Guardar
@@ -113,13 +142,14 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
                       variant="ghost"
                       className="px-3"
                       onClick={() => {
+                        list.setError(null);
                         setEditing(s.id);
                         setEdit({ time: s.time, durationMin: String(s.durationMin), modality: s.modality });
                       }}
                     >
                       Editar
                     </Button>
-                    <Button variant="ghost" className="px-3 text-red-700" disabled={pending} onClick={() => run(() => deleteSlotAction(s.id))}>
+                    <Button variant="ghost" className="px-3 text-red-700" disabled={pending} onClick={() => list.run(() => deleteSlotAction(s.id))}>
                       Borrar
                     </Button>
                   </div>
@@ -134,7 +164,7 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
         className="space-y-2 rounded-xl bg-sand/50 p-3"
         onSubmit={(e) => {
           e.preventDefault();
-          run(() => createSlotAction({ date, time: form.time, durationMin: Number(form.durationMin), modality: form.modality }), "Horario agregado", () =>
+          add.run(() => createSlotAction({ date, time: form.time, durationMin: Number(form.durationMin), modality: form.modality }), "Horario agregado", () =>
             setForm({ ...form, time: "" }),
           );
         }}
@@ -149,18 +179,19 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
           </Select>
         </div>
         <p className="text-xs text-muted">Hora · duración (min) · modalidad</p>
+        <Feedback error={add.error} done={add.done} />
         <Button type="submit" className="w-full" disabled={pending}>
           Agregar
         </Button>
       </form>
 
-      <Feedback error={error} done={done} />
+      <Feedback error={day.error} done={day.done} />
 
       <div className="grid grid-cols-2 gap-2">
         <Button
           variant="secondary"
           disabled={pending}
-          onClick={() => run(() => copyWeekAction(date), "Semana anterior copiada a esta semana")}
+          onClick={() => day.run(() => copyWeekAction(date), "Semana anterior copiada a esta semana")}
         >
           Copiar semana anterior
         </Button>
@@ -168,7 +199,7 @@ export function DayEditor({ date, slots }: { date: string; slots: DaySlot[] }) {
           variant="danger"
           disabled={pending || !slots.some((s) => s.status === "open")}
           onClick={() => {
-            if (confirm("¿Borrar todos los horarios libres de este día?")) run(() => closeDayAction(date), "Día cerrado");
+            if (confirm("¿Borrar todos los horarios libres de este día?")) day.run(() => closeDayAction(date), "Día cerrado");
           }}
         >
           Cerrar día
