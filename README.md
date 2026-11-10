@@ -31,7 +31,7 @@ Todo acceso a datos es del lado del servidor (Admin SDK). Las reglas de Firestor
 
 ## Desarrollo local (con emuladores)
 
-Requiere Node 22+ (lo exige firebase-admin) y Java (para los emuladores de Firebase).
+Requiere Node 22 (recomendado; funciona desde 20.9) y Java (para los emuladores de Firebase).
 
 ```bash
 npm install
@@ -54,7 +54,7 @@ npm run lint && npm run typecheck
 
 1. Proyecto de Firebase con Firestore y Auth (proveedor email/contraseña). Funciona en el plan gratis (Spark). Publicar reglas: `npx firebase deploy --only firestore:rules --project <id>`.
 2. Cuenta de servicio → `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`.
-3. En Vercel, **Node.js Version 22.x** (también queda fijado en `package.json`, campo `engines`). Con Node 20 falla al cargar firebase-admin (`ERR_REQUIRE_ESM`).
+3. En Vercel, **Node.js Version 22.x** (también queda fijado en `package.json`, campo `engines`). Se usa firebase-admin 13: la versión 14 depende de un módulo solo ESM que en Vercel falla al cargar (`ERR_REQUIRE_ESM`).
 4. Variables de `.env.example` en Vercel, más **`LINK_SECRET`** (cadena aleatoria larga; ver abajo).
 5. Email: Gmail con contraseña de aplicación (`SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`) o, con dominio propio verificado, Resend (`RESEND_API_KEY`).
 6. `npm run seed` apuntando a producción (con `SEED_PRIVATE_ADDRESS` y `SEED_NOTIFICATION_EMAIL`) y `npm run create-admin`.
