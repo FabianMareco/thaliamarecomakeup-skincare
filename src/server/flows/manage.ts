@@ -17,7 +17,7 @@ export async function rescheduleByClient(token: string, newSlotId: string, now =
   const tenant = await loadTenant();
   const { booking, previousWhen } = await moveToSlot(found.id, newSlotId, now, "client", (cur) => {
     if (!clientOptions(cur, now, tenant.skincare).canReschedule) {
-      throw new UserError("Ya no se puede reprogramar esta reserva online. Escribinos por WhatsApp.");
+      throw new UserError("Ya no se puede reprogramar esta reserva online. Escribime por WhatsApp.");
     }
   });
   await Promise.all([
@@ -48,7 +48,7 @@ export async function cancelByClient(
       throw new UserError(`Faltan menos de ${tenant.skincare.cancellationWindowHours} hs para el turno: ya no se puede cancelar con reintegro.`);
     }
     if (!opts.refund && !options.canCancelForfeit) {
-      throw new UserError("Esta reserva no se puede cancelar online. Escribinos por WhatsApp.");
+      throw new UserError("Esta reserva no se puede cancelar online. Escribime por WhatsApp.");
     }
     let next = transition(cur, opts.refund ? "cancel_with_refund" : "cancel_forfeit", { at: now, by: "client" });
     if (destination) next = { ...next, deposit: { ...next.deposit, refundDestination: destination } };

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cardTone } from "@/components/palette";
+import { WhatsAppButton } from "@/components/site";
 import { PageTitle } from "@/components/ui";
 import { MAKEUP_CATEGORIES, MAKEUP_SERVICES_NOTE } from "@/lib/domain/defaults";
 import { formatARS } from "@/lib/domain/money";
@@ -60,6 +61,11 @@ export default async function MaquillajePage() {
           today={arDateStr(new Date())}
         />
       </section>
+
+      <div className="space-y-2">
+        <p className="text-[15px] text-muted">¿Tenés dudas?</p>
+        <WhatsAppButton number={tenant.whatsappNumber} />
+      </div>
     </div>
   );
 }

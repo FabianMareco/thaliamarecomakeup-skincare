@@ -29,7 +29,7 @@ export const makeupRequestSchema = clientDataSchema
     readyByTime: timeStr,
     location: z.enum(["studio", "home"]),
     homeAddress: trimmed(200).optional(),
-    peopleCount: z.coerce.number().int().min(1, "Mínimo 1 persona").max(30, "Para más de 30 personas escribinos por WhatsApp"),
+    peopleCount: z.coerce.number().int().min(1, "Mínimo 1 persona").max(30, "Para más de 30 personas escribime por WhatsApp"),
     comments: trimmed(1000).optional(),
     preferredTrialDate: z.union([dateStr, z.literal("")]).optional(),
     acceptPolicies: z.literal(true, "Tenés que aceptar las políticas"),

@@ -33,7 +33,7 @@ function assertUploadOpen(b: Booking, now: Date): void {
   }
   const deadline = b.deposit.receiptUploadDeadline;
   if (deadline && deadline.getTime() <= now.getTime()) {
-    throw new UserError("Se venció el plazo para subir el comprobante y el lugar se liberó. Escribinos por WhatsApp.");
+    throw new UserError("Se venció el plazo para subir el comprobante y el lugar se liberó. Escribime por WhatsApp.");
   }
 }
 
@@ -56,7 +56,7 @@ export async function uploadReceipt(
       const slot = b.slotId ? await txGetSlot(tx, b.slotId) : null;
       assertUploadOpen(b, now);
       if (b.line === "skincare" && (!slot || slot.bookingId !== b.id)) {
-        throw new UserError("El horario de esta reserva ya no está disponible. Escribinos por WhatsApp.");
+        throw new UserError("El horario de esta reserva ya no está disponible. Escribime por WhatsApp.");
       }
       const receipt: Receipt = { path: stored.path, uploadedAt: now, payerName: payer.data, contentType: stored.contentType, source: "client" };
       const next = paymentMethodFor(b).confirm(b, { kind: "receipt", receipt, by: "client" }, now);

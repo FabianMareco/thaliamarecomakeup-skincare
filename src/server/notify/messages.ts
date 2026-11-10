@@ -113,7 +113,7 @@ function layout(ctx: MessageCtx, title: string, paragraphs: string[], cta?: { la
 ${paragraphs.map((p) => `<p style="font-size:15px;line-height:1.5;margin:0 0 12px">${p}</p>`).join("\n")}
 ${cta ? `<p style="margin:20px 0 8px"><a href="${esc(cta.url)}" style="display:inline-block;background:#8a5a4a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:999px;font-size:15px">${esc(cta.label)}</a></p>` : ""}
 </div>
-<p style="font-size:13px;color:#7a6a64;margin:16px 0 0">¿Dudas? Escribinos por <a href="${esc(wa)}" style="color:#8a5a4a">WhatsApp</a>. Código de reserva: <strong>${esc(ctx.booking.code)}</strong>.</p>
+<p style="font-size:13px;color:#7a6a64;margin:16px 0 0">¿Dudas? Escribime por <a href="${esc(wa)}" style="color:#8a5a4a">WhatsApp</a>. Código de reserva: <strong>${esc(ctx.booking.code)}</strong>.</p>
 </div></body></html>`;
 }
 
@@ -186,7 +186,7 @@ export function clientEmail(event: ClientEvent, ctx: MessageCtx): EmailContent {
           ? `Lamentablemente Thalia no puede tomar tu solicitud de <strong>${svc}</strong> para el ${when}.`
           : `Lamentablemente tu reserva de <strong>${svc}</strong> para el ${when} no pudo confirmarse.`,
         reason ? `Motivo: <em>${reason}</em>` : "",
-        "Si querés, escribinos por WhatsApp y buscamos otra opción.",
+        "Si querés, escribime por WhatsApp y buscamos otra opción.",
       ].filter(Boolean));
 
     case "expired":
@@ -194,7 +194,7 @@ export function clientEmail(event: ClientEvent, ctx: MessageCtx): EmailContent {
         b.status === "expired" && b.history.at(-1)?.from === "awaiting_approval"
           ? `Tu solicitud de <strong>${svc}</strong> para hoy no pudo confirmarse a tiempo y quedó sin efecto.`
           : `No recibimos el comprobante de la seña a tiempo, así que ${b.line === "makeup" ? "la fecha" : "el horario"} de <strong>${svc}</strong> (${when}) se liberó.`,
-        "Si querés, podés volver a reservar o escribirnos por WhatsApp.",
+        "Si querés, podés volver a reservar o escribirme por WhatsApp.",
       ]);
 
     case "reminder": {

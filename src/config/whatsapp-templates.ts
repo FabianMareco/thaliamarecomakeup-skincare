@@ -59,7 +59,7 @@ export const WHATSAPP_TEMPLATES: Partial<Record<ClientEvent, TemplateDef>> = {
   rejected: {
     name: "turno_rechazado",
     body: "Hola {{1}}. Lamentablemente tu reserva de {{2}} para el {{3}} no pudo confirmarse. {{4}} Gracias por tu comprensión.",
-    params: (c) => [first(c), serviceLabel(c.booking), whenText(c.booking), c.reason ? `Motivo: ${c.reason}` : "Escribinos si querés buscar otra opción."],
+    params: (c) => [first(c), serviceLabel(c.booking), whenText(c.booking), c.reason ? `Motivo: ${c.reason}` : "Escribime si querés buscar otra opción."],
   },
   expired: {
     name: "turno_vencido",

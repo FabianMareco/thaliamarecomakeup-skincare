@@ -70,11 +70,11 @@ export default async function GestionarPage(props: PageProps<"/turnos/gestionar/
       )}
 
       {b.status === "confirmed" && b.line === "skincare" && options.canCancelWithRefund && !options.canReschedule && (
-        <p className="text-sm text-muted">Ya usaste la reprogramación online. Para otro cambio, escribinos por WhatsApp.</p>
+        <p className="text-sm text-muted">Ya usaste la reprogramación online. Para otro cambio, escribime por WhatsApp.</p>
       )}
 
       {b.status === "confirmed" && b.line === "makeup" && (
-        <Alert tone="info">La seña no se reintegra. Para cualquier cambio, escribinos por WhatsApp.</Alert>
+        <Alert tone="info">La seña no se reintegra. Para cualquier cambio, escribime por WhatsApp.</Alert>
       )}
 
       {b.status === "cancelled_refunded" && (
@@ -87,7 +87,7 @@ export default async function GestionarPage(props: PageProps<"/turnos/gestionar/
       {b.status === "cancelled_forfeited" && <Alert tone="info" title="Reserva cancelada">La seña no se reintegra.</Alert>}
       {(b.status === "rejected" || b.status === "expired") && (
         <Alert tone="danger" title={b.status === "rejected" ? "La reserva no pudo confirmarse" : "La reserva venció"}>
-          {b.rejectionReason ? `Motivo: ${b.rejectionReason}` : "Si querés, escribinos por WhatsApp y buscamos otra opción."}
+          {b.rejectionReason ? `Motivo: ${b.rejectionReason}` : "Si querés, escribime por WhatsApp y buscamos otra opción."}
         </Alert>
       )}
 
@@ -95,7 +95,7 @@ export default async function GestionarPage(props: PageProps<"/turnos/gestionar/
         <summary className="cursor-pointer font-medium">Política de reserva</summary>
         <p className="mt-2">{view.policy}</p>
       </details>
-      <WhatsAppButton number={view.whatsappNumber} text={wa} label="Contactar por WhatsApp" className="w-full" />
+      <WhatsAppButton number={view.whatsappNumber} text={wa} label="Escribime por WhatsApp" className="w-full" />
     </div>
   );
 }

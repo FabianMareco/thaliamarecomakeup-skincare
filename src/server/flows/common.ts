@@ -73,7 +73,7 @@ export async function assertNoPendingPayment(
     });
     if (active) {
       throw new UserError(
-        "Ya tenés una reserva esperando el pago de la seña. Completala (o esperá a que venza) antes de hacer otra, o escribinos por WhatsApp.",
+        "Ya tenés una reserva esperando el pago de la seña. Completala (o esperá a que venza) antes de hacer otra, o escribime por WhatsApp.",
       );
     }
   }

@@ -87,7 +87,7 @@ export default async function PagoPage(props: PageProps<"/turnos/pago/[token]">)
 
       {b.status === "awaiting_payment" && view.expiredByDeadline && (
         <Alert tone="danger" title="Se venció el plazo">
-          No recibimos el comprobante a tiempo y {place} se liberó. Si ya transferiste, escribinos por WhatsApp.
+          No recibimos el comprobante a tiempo y {place} se liberó. Si ya transferiste, escribime por WhatsApp.
         </Alert>
       )}
 
@@ -111,7 +111,7 @@ export default async function PagoPage(props: PageProps<"/turnos/pago/[token]">)
       {(b.status === "rejected" || b.status === "expired") && (
         <Alert tone="danger" title={b.status === "rejected" ? "La reserva no pudo confirmarse" : "La reserva venció"}>
           {b.rejectionReason ? <>Motivo: {b.rejectionReason}. </> : null}
-          Si querés, escribinos por WhatsApp y buscamos otra opción.
+          Si querés, escribime por WhatsApp y buscamos otra opción.
         </Alert>
       )}
 
@@ -126,7 +126,7 @@ export default async function PagoPage(props: PageProps<"/turnos/pago/[token]">)
           <summary className="cursor-pointer font-medium">Política de reserva</summary>
           <p className="mt-2">{view.policy}</p>
         </details>
-        <WhatsAppButton number={view.whatsappNumber} text={`Hola! Te escribo por la reserva ${b.code}`} label="Consultar por WhatsApp" className="w-full" />
+        <WhatsAppButton number={view.whatsappNumber} text={`Hola! Te escribo por la reserva ${b.code}`} label="Escribime por WhatsApp" className="w-full" />
       </div>
     </div>
   );

@@ -111,7 +111,7 @@ export async function freeSlotsImage(tenant: Tenant, from: string, to: string, f
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginTop: format === "story" ? 60 : 32, gap: rows ? 12 : 34, flexGrow: 1 }}>
           {shown.length === 0 ? (
-            <div style={{ fontSize: 38, color: C.muted }}>No quedan turnos libres en estas fechas. ¡Escribinos y te avisamos!</div>
+            <div style={{ fontSize: 38, color: C.muted }}>No quedan turnos libres en estas fechas. ¡Escribime y te aviso!</div>
           ) : rows ? (
             shown.map((d) => (
               <div key={d.date} style={{ display: "flex", alignItems: "center", background: "#ffffff", borderRadius: 22, border: `2px solid ${C.line}`, padding: "12px 20px" }}>
