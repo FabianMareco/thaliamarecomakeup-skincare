@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SlotPicker, type PickerDay } from "@/components/SlotPicker";
-import { categoryTone } from "@/components/palette";
+import { cardTone } from "@/components/palette";
 import { Alert, Button, Card, cx, Field, Input, Row } from "@/components/ui";
 import { formatARS, skincareDeposit } from "@/lib/domain/money";
 import { fmtDateStrLong } from "@/lib/domain/time";
@@ -107,7 +107,7 @@ export function BookingWizard({
           {categories.map((cat, ci) => (
             <section key={cat} className="space-y-3">
               <h2 className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted">
-                <span aria-hidden className={cx("h-2.5 w-2.5 rounded-full", categoryTone(ci).dot)} />
+                <span aria-hidden className={cx("h-2.5 w-2.5 rounded-full", cardTone(ci).dot)} />
                 {cat}
               </h2>
               <div className="grid gap-3">
@@ -120,7 +120,7 @@ export function BookingWizard({
                         key={s.id}
                         type="button"
                         onClick={() => chooseService(s)}
-                        className={cx("rounded-2xl border-2 p-4 text-left transition-colors hover:border-plum", categoryTone(ci).card)}
+                        className={cx("rounded-2xl border-2 p-4 text-left transition-colors hover:border-plum", cardTone(services.indexOf(s)).card)}
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           {s.badge && <span className="rounded-full bg-plum px-2.5 py-0.5 text-xs font-medium text-white">{s.badge}</span>}

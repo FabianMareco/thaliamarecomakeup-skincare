@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { categoryTone } from "@/components/palette";
+import { cardTone } from "@/components/palette";
 import { PageTitle } from "@/components/ui";
 import { MAKEUP_CATEGORIES, MAKEUP_SERVICES_NOTE } from "@/lib/domain/defaults";
 import { formatARS } from "@/lib/domain/money";
@@ -26,14 +26,14 @@ export default async function MaquillajePage() {
         {categories.map((cat, ci) => (
           <section key={cat} className="space-y-3">
             <h2 className="flex items-center gap-2 font-display text-xl">
-              <span aria-hidden className={`h-3 w-3 rounded-full ${categoryTone(ci).dot}`} />
+              <span aria-hidden className={`h-3 w-3 rounded-full ${cardTone(ci).dot}`} />
               {cat}
             </h2>
-            <ul className={`divide-y divide-white/70 rounded-2xl border-2 ${categoryTone(ci).card}`}>
+            <ul className="grid gap-2">
               {services
                 .filter((s) => s.category === cat)
                 .map((s) => (
-                  <li key={s.id} className="flex items-baseline justify-between gap-4 px-4 py-3">
+                  <li key={s.id} className={`flex items-baseline justify-between gap-4 rounded-2xl border-2 px-4 py-3 ${cardTone(services.indexOf(s)).card}`}>
                     <span className="text-[15px] leading-snug">
                       {s.name}
                       {s.includesTrial && <span className="ml-2 rounded-full bg-plum px-2 py-0.5 text-xs text-white">incluye prueba</span>}
