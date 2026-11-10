@@ -28,6 +28,7 @@ import {
 } from "@/server/flows/admin";
 import { acceptMakeup, type OverlapWarning } from "@/server/flows/makeup";
 import { createAdminBooking } from "@/server/flows/manualBooking";
+import { updatePatient, type PatientInput } from "@/server/flows/patients";
 import { closeDay, copyPreviousWeek, createSlot, deleteSlot, generateRange, saveWeeklyTemplate, updateSlot } from "@/server/flows/schedule";
 import { availabilityFor, type AvailabilityDay } from "@/server/flows/skincare";
 import { arDateStr } from "@/lib/domain/time";
@@ -146,6 +147,14 @@ export async function searchPatientsAction(q: string): Promise<ActionResult<Pati
     await assertAdmin();
     const list = await searchPatients(String(q ?? "").slice(0, 80));
     return list.map((c) => ({ phone: c.phone, name: c.name, email: c.email, bookingsCount: c.bookingsCount, noShowCount: c.noShowCount }));
+  });
+}
+
+export async function updatePatientAction(clientId: string, input: PatientInput): Promise<ActionResult<{ id: string }>> {
+  return admin(async () => {
+    if (typeof clientId !== "string" || !/^\+\d{8,15}$/.test(clientId)) throw new UserError("Paciente inválida");
+    const c = await updatePatient(clientId, { name: String(input?.name ?? ""), phone: String(input?.phone ?? ""), email: String(input?.email ?? "") });
+    return { id: c.id };
   });
 }
 

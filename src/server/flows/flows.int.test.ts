@@ -26,6 +26,7 @@ import { runTick } from "./cron";
 import { acceptMakeup, createMakeupRequest } from "./makeup";
 import { cancelByClient, rescheduleByClient } from "./manage";
 import { createAdminBooking } from "./manualBooking";
+import { updatePatient } from "./patients";
 import { uploadReceipt } from "./receipts";
 import { createSkincareBooking, getAvailability } from "./skincare";
 import { closeDay, createSlot, deleteSlot, generateRange, updateSlot } from "./schedule";
@@ -608,5 +609,32 @@ describe("Calendario, mensajes completos y reenvíos", () => {
     expect(sent.find((s) => s.channel === "email")!.subject).toMatch(/^Recordatorio/);
     expect((await getBooking(bookingId))!.remindersSent).toEqual({});
     await expect(resendNotice(bookingId, "payment_link", NOW)).rejects.toThrow(/no está esperando la seña/);
+  });
+});
+
+describe("Edición de pacientes", () => {
+  it("cambia nombre y email, y actualiza la copia en sus reservas", async () => {
+    const { bookingId } = await bookFuture(1);
+    await updatePatient("+5491150000001", { name: "Ana Pérez", phone: "11 5000-0001", email: "ana@example.com" }, NOW);
+    expect(await getClient("+5491150000001")).toMatchObject({ name: "Ana Pérez", email: "ana@example.com", bookingsCount: 1 });
+    expect((await getBooking(bookingId))!.client).toMatchObject({ name: "Ana Pérez", email: "ana@example.com", phone: "+5491150000001" });
+  });
+
+  it("si cambia el WhatsApp, mueve la ficha y sus reservas al número nuevo", async () => {
+    const { bookingId } = await bookFuture(1);
+    const c = await updatePatient("+5491150000001", { name: "Clienta 1", phone: "11 7777-8888", email: "" }, NOW);
+    expect(c.id).toBe("+5491177778888");
+    expect(await getClient("+5491150000001")).toBeNull();
+    expect(await getClient("+5491177778888")).toMatchObject({ phone: "+5491177778888", email: "", bookingsCount: 1 });
+    expect((await getBooking(bookingId))!).toMatchObject({ clientId: "+5491177778888", client: { phone: "+5491177778888", email: "" } });
+  });
+
+  it("no pisa a otra paciente ni acepta datos inválidos", async () => {
+    await bookFuture(1, "09:00");
+    const slot = await putSlot({ date: "2026-11-11", time: "09:00", durationMin: 120, modality: "in_person" });
+    await createAdminBooking({ serviceId: LIMPIEZA, name: "Otra", phone: "11 5000-0002", slotId: slot.id, depositPaid: true, notifyClient: false }, NOW);
+    await expect(updatePatient("+5491150000001", { name: "X Y", phone: "11 5000-0002", email: "" }, NOW)).rejects.toThrow(/otra paciente/);
+    await expect(updatePatient("+5491150000001", { name: "X Y", phone: "123", email: "" }, NOW)).rejects.toThrow(/WhatsApp/);
+    await expect(updatePatient("+5491150000001", { name: "X Y", phone: "11 5000-0001", email: "no-es-email" }, NOW)).rejects.toThrow(/email/);
   });
 });
