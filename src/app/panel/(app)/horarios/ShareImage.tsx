@@ -13,7 +13,7 @@ export function ShareImage({ ranges }: { ranges: Range[] }) {
   const r = ranges[range];
   const src = `/api/panel/imagen/libres?from=${r.from}&to=${r.to}&formato=${format}&v=${version}`;
   const fileName = `turnos-libres-${r.from}${r.to !== r.from ? `-al-${r.to}` : ""}.png`;
-  const chip = (active: boolean) => cx("rounded-full px-3 py-1.5 text-sm", active ? "bg-ink text-white" : "bg-sand text-ink");
+  const chip = (active: boolean) => cx("rounded-full px-3 py-1.5 text-sm", active ? "bg-plum text-white" : "bg-peach/50 text-ink");
 
   return (
     <div className="space-y-3">

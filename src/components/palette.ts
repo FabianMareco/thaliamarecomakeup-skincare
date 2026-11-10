@@ -11,6 +11,22 @@ const MIXES = [
   { card: "bg-linear-to-br from-peach/60 to-rose/35 border-salmon", dot: "bg-plum" },
 ] as const;
 
+/** Mezcla de colores siempre igual para un mismo id (cada reserva o paciente conserva su tono). */
+export function toneFor(id: string) {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return cardTone(h);
+}
+
+/** Colores de la agenda según el estado del horario o evento. */
+export const AGENDA_TONES = {
+  open: { item: "border-l-peach bg-peach/25", dot: "bg-peach", label: "Libre" },
+  held: { item: "border-l-salmon bg-salmon/30", dot: "bg-salmon", label: "Retenido" },
+  booked: { item: "border-l-rose bg-rose/30", dot: "bg-rose", label: "Reservado" },
+  makeup_event: { item: "border-l-mauve bg-mauve/25", dot: "bg-mauve", label: "Evento maquillaje" },
+  makeup_trial: { item: "border-l-plum bg-plum/15", dot: "bg-plum", label: "Prueba" },
+} as const;
+
 /** Mezcla de colores para la card número `index` (se repiten en orden). */
 export function cardTone(index: number) {
   return MIXES[index % MIXES.length];

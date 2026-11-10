@@ -31,7 +31,7 @@ export function PanelNav({ pending, variant }: { pending: number; variant: "top"
             <li key={i.href} className={cx(i.main && "hidden md:block")}>
               <Link
                 href={i.href}
-                className={cx("inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5", active(i.href) ? "bg-ink text-white" : "text-muted hover:bg-sand")}
+                className={cx("inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5", active(i.href) ? "bg-plum text-white" : "text-muted hover:bg-peach/40")}
               >
                 {i.label}
                 {badge(i.href)}
@@ -49,7 +49,7 @@ export function PanelNav({ pending, variant }: { pending: number; variant: "top"
           <li key={i.href}>
             <Link
               href={i.href}
-              className={cx("flex min-h-14 flex-col items-center justify-center text-xs", active(i.href) ? "font-semibold text-accent" : "text-muted")}
+              className={cx("flex min-h-14 flex-col items-center justify-center text-xs", active(i.href) ? "font-semibold text-plum" : "text-muted")}
             >
               <span className="flex items-center">
                 {i.label}

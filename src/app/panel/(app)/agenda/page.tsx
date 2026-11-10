@@ -1,17 +1,12 @@
 import Link from "next/link";
+import { AGENDA_TONES } from "@/components/palette";
 import { cx } from "@/components/ui";
 import { addDaysStr, arDateStr, fmtDateStrLong, isValidDateStr, mondayOf } from "@/lib/domain/time";
 import { agenda, type AgendaItem } from "@/server/panel";
 
 export const metadata = { title: "Agenda" };
 
-const COLORS = {
-  open: "border-l-emerald-400 bg-emerald-50/60",
-  held: "border-l-amber-400 bg-amber-50",
-  booked: "border-l-accent bg-blush/50",
-  makeup_event: "border-l-fuchsia-500 bg-fuchsia-50",
-  makeup_trial: "border-l-sky-500 bg-sky-50",
-};
+const COLORS = Object.fromEntries(Object.entries(AGENDA_TONES).map(([k, v]) => [k, v.item])) as Record<keyof typeof AGENDA_TONES, string>;
 
 function Item({ item }: { item: AgendaItem }) {
   if (item.kind === "slot") {
@@ -73,7 +68,7 @@ export default async function AgendaPage(props: PageProps<"/panel/agenda">) {
         <h1 className="font-display text-2xl">Agenda</h1>
         <div className="flex rounded-full border border-line bg-white p-0.5 text-sm">
           {(["day", "week"] as const).map((v) => (
-            <Link key={v} href={href(date, v)} className={cx("rounded-full px-3 py-1.5", view === v ? "bg-ink text-white" : "text-muted")}>
+            <Link key={v} href={href(date, v)} className={cx("rounded-full px-3 py-1.5", view === v ? "bg-plum text-white" : "text-muted")}>
               {v === "day" ? "Día" : "Semana"}
             </Link>
           ))}
@@ -91,11 +86,12 @@ export default async function AgendaPage(props: PageProps<"/panel/agenda">) {
         </Link>
       </div>
       <div className="flex flex-wrap gap-3 text-xs text-muted">
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />Libre</span>
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />Retenido</span>
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-accent" />Reservado</span>
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-fuchsia-500" />Evento maquillaje</span>
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-full bg-sky-500" />Prueba</span>
+        {Object.values(AGENDA_TONES).map((t) => (
+          <span key={t.label}>
+            <span className={`mr-1 inline-block h-2.5 w-2.5 rounded-full ${t.dot}`} />
+            {t.label}
+          </span>
+        ))}
       </div>
       <div className="space-y-6">
         {dates.map((d) => {

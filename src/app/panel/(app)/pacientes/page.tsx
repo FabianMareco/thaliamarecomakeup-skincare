@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { toneFor } from "@/components/palette";
 import { Badge, Input } from "@/components/ui";
 import { fmtDateShort } from "@/lib/domain/time";
 import { listClients } from "@/server/repo/bookings";
@@ -25,7 +26,7 @@ export default async function PacientesPage(props: PageProps<"/panel/pacientes">
       <ul className="space-y-2">
         {list.map((c) => (
           <li key={c.id}>
-            <Link href={`/panel/pacientes/${encodeURIComponent(c.id)}`} className="block rounded-2xl border border-line bg-white p-4 hover:border-accent">
+            <Link href={`/panel/pacientes/${encodeURIComponent(c.id)}`} className={`block rounded-2xl border-2 p-4 transition-colors hover:border-plum ${toneFor(c.id).card}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-medium">{c.name}</p>

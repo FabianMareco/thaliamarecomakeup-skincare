@@ -12,6 +12,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   return (
     <div className="flex min-h-full flex-1 flex-col pb-20 md:pb-0">
       <header className="sticky top-0 z-20 border-b border-line bg-cream/95 backdrop-blur">
+        <div aria-hidden className="h-1.5 bg-linear-to-r from-peach via-rose to-plum" />
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <p className="font-display text-lg">Panel · Thalia</p>
           <form action={logoutAction}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cardTone } from "@/components/palette";
 import { Badge, Button, Card, cx, Field, Input, Select } from "@/components/ui";
 import { formatARS } from "@/lib/domain/money";
 import type { Line, Service } from "@/lib/domain/types";
@@ -79,9 +80,13 @@ export function ServicesEditor({ services }: { services: Service[] }) {
       )}
 
       <ul className="space-y-2">
-        {list.map((s) => (
+        {list.map((s, i) => (
           <li key={s.id}>
-            <button type="button" onClick={() => setEditing(toDraft(s))} className="w-full rounded-2xl border border-line bg-white p-4 text-left hover:border-accent">
+            <button
+              type="button"
+              onClick={() => setEditing(toDraft(s))}
+              className={cx("w-full rounded-2xl border-2 p-4 text-left transition-colors hover:border-plum", cardTone(i).card, !s.active && "opacity-60")}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-xs text-muted">{s.category}</p>

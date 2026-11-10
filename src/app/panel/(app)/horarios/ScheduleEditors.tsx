@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Badge, Button, cx, Input, Select } from "@/components/ui";
+import { AGENDA_TONES } from "@/components/palette";
+import { Button, cx, Input, Select } from "@/components/ui";
 import type { Modality, SlotStatus, TemplateSlot, Weekday } from "@/lib/domain/types";
 import { WEEKDAYS } from "@/lib/domain/types";
 import { Feedback, useAction } from "../../_components/actions";
@@ -121,7 +122,7 @@ export function DayEditor({ date, slots, services }: { date: string; slots: DayS
       {!open && <Feedback error={list.error} done={list.done} />}
       <ul className="space-y-2">
         {slots.map((s) => (
-          <li key={s.id} className="rounded-xl border border-line p-3">
+          <li key={s.id} className={cx("rounded-xl border border-line border-l-4 p-3", AGENDA_TONES[s.status].item)}>
             {open?.id === s.id && open.mode === "edit" ? (
               <div className="space-y-2">
                 <div className="grid grid-cols-3 gap-2">
@@ -191,10 +192,12 @@ export function DayEditor({ date, slots, services }: { date: string; slots: DayS
                   )}
                   <div className="mt-1">
                     {s.status === "open" ? (
-                      <Badge tone="ok">Libre</Badge>
+                      <span className="inline-flex rounded-full bg-white/80 px-2.5 py-0.5 text-xs font-medium text-plum">Libre</span>
                     ) : (
                       <Link href={`/panel/reservas/${s.bookingId}`}>
-                        <Badge tone={s.status === "booked" ? "accent" : "warn"}>{s.status === "booked" ? "Reservado" : "Retenido"} · ver reserva</Badge>
+                        <span className={cx("inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium text-ink", s.status === "booked" ? "bg-rose" : "bg-salmon")}>
+                          {s.status === "booked" ? "Reservado" : "Retenido"} · ver reserva
+                        </span>
                       </Link>
                     )}
                   </div>
@@ -309,7 +312,7 @@ export function TemplateEditor({ initial }: { initial: Record<Weekday, TemplateS
             key={d}
             type="button"
             onClick={() => setDay(d)}
-            className={cx("rounded-full px-3 py-1.5 text-sm whitespace-nowrap", d === day ? "bg-ink text-white" : "bg-sand text-ink")}
+            className={cx("rounded-full px-3 py-1.5 text-sm whitespace-nowrap", d === day ? "bg-plum text-white" : "bg-peach/50 text-ink")}
           >
             {DAY_LABEL[d].slice(0, 3)} <span className="text-xs opacity-70">{tpl[d].length}</span>
           </button>

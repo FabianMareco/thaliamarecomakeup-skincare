@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { toneFor } from "@/components/palette";
 import { Badge } from "@/components/ui";
 import { formatARS, serviceLabel } from "@/lib/domain/money";
 import { fmtDateStrLong, fmtDateTimeShort } from "@/lib/domain/time";
@@ -25,7 +26,7 @@ export function whenShort(b: Booking): string {
 /** Fila compacta que lleva al detalle de la reserva. */
 export function BookingRow({ b, extra }: { b: Booking; extra?: React.ReactNode }) {
   return (
-    <Link href={`/panel/reservas/${b.id}`} className="block rounded-2xl border border-line bg-white p-4 hover:border-accent">
+    <Link href={`/panel/reservas/${b.id}`} className={`block rounded-2xl border-2 p-4 transition-colors hover:border-plum ${toneFor(b.id).card}`}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-muted">{b.code}</span>
         <StatusBadge status={b.status} />
