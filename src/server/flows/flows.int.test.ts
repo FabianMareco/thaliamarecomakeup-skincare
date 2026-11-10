@@ -595,7 +595,7 @@ describe("Calendario, mensajes completos y reenvíos", () => {
     await confirmDepositManually(bookingId, {}, NOW);
     const ok = manualMessages((await getBooking(bookingId))!, tenant, NOW)[0].text;
     expect(ok).toContain("*Lugar:* Calle Falsa 123, 4° B");
-    expect(ok).toContain("*Seña:* $20.000 (recibida ✅)");
+    expect(ok).toContain("*Seña:* $20.000 (recibida)");
     expect(ok).toContain("*Saldo en el turno:* $30.000");
     expect(ok).toMatch(/Agendalo en Google Calendar: http:\/\/localhost:3000\/turnos\/gestionar\/[\w-]+\/google-calendar/);
   });

@@ -12,11 +12,12 @@ import { whenText } from "./messages";
 // el texto completo, con todos los datos del turno, y abre WhatsApp con el
 // mensaje listo para enviar. No requiere Meta ni tiene costo, y como no son
 // plantillas de Meta pueden tener varias líneas y formato (*negrita*).
+// Sin emojis: algunos se rompen al pasar por el link wa.me (se ven como "�").
 
 export type ManualMessage = { event: ClientEvent; label: string; url: string; text: string };
 
 const HOUR = 3600_000;
-const PUNCTUALITY = "El estudio no tiene sala de espera y los turnos empiezan puntuales: te pido llegar a horario 🙏";
+const PUNCTUALITY = "El estudio no tiene sala de espera y los turnos empiezan puntuales: te pido llegar a horario.";
 
 const first = (b: Booking) => b.client.name.split(" ")[0] || b.client.name;
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -51,7 +52,7 @@ export function bookingDetails(b: Booking, tenant: Tenant): string {
   if (total > 0) lines.push(`*Precio${b.extras?.length || b.totalPrice !== undefined ? " (combo)" : ""}:* ${formatARS(total)}`);
   if (b.makeup?.travelFee) lines.push(`*Viático:* ${formatARS(b.makeup.travelFee)}`);
   if (b.deposit.amount > 0) {
-    const status = b.deposit.status === "verified" ? "recibida ✅" : b.status === "awaiting_verification" ? "en verificación" : "pendiente";
+    const status = b.deposit.status === "verified" ? "recibida" : b.status === "awaiting_verification" ? "en verificación" : "pendiente";
     lines.push(`*Seña:* ${formatARS(b.deposit.amount)} (${status})`);
     lines.push(`*Saldo ${b.line === "makeup" ? "el día del evento" : "en el turno"}:* ${b.balance.amount > 0 ? formatARS(b.balance.amount) : "nada, ya está todo pago"}`);
   }
@@ -84,11 +85,11 @@ export function manualText(
 
   switch (event) {
     case "same_day_received":
-      return join(`${hi} Recibí tu solicitud para hoy:`, details, "Te confirmo en un rato por acá. Todavía no transfieras nada 🙂");
+      return join(`${hi} Recibí tu solicitud para hoy:`, details, "Te confirmo en un rato por acá. Todavía no transfieras nada.");
     case "payment_link_created":
     case "payment_link_approved":
       return join(
-        `${hi} ${event === "payment_link_approved" ? "Tengo lugar para tu turno 😊" : "Te paso los datos de tu reserva:"}`,
+        `${hi} ${event === "payment_link_approved" ? "Tengo lugar para tu turno." : "Te paso los datos de tu reserva:"}`,
         details,
         transferBlock(b, tenant),
         `Después subí el comprobante acá: ${paymentUrl(b.id)}${deadline}`,
@@ -103,10 +104,10 @@ export function manualText(
     case "confirmed": {
       const cal = calendarLinks(b, tenant);
       return join(
-        `${hi} Tu reserva está confirmada ✅`,
+        `${hi} Tu reserva está *confirmada*.`,
         details,
         b.line === "skincare" ? PUNCTUALITY : "Recordá que la seña no se reintegra.",
-        cal ? `📅 Agendalo en Google Calendar: ${cal.googleShort}` : null,
+        cal ? `Agendalo en Google Calendar: ${cal.googleShort}` : null,
         manage,
       );
     }
@@ -115,14 +116,14 @@ export function manualText(
       const early = b.line === "skincare" && b.startAt && (opts.offsetHours ?? 0) > window;
       const cal = calendarLinks(b, tenant);
       return join(
-        `${hi} Te recuerdo tu ${b.line === "makeup" ? "evento" : "turno"} 💆‍♀️`,
+        `${hi} Te recuerdo tu ${b.line === "makeup" ? "evento" : "turno"}:`,
         details,
         early && b.startAt
           ? `Tenés hasta el ${fmtDateTimeLong(refundDeadline(b.startAt, window))} para reprogramar o cancelar con reintegro.`
           : b.line === "skincare"
             ? PUNCTUALITY
             : null,
-        cal ? `📅 Agendalo: ${cal.googleShort}` : null,
+        cal ? `Agendalo en Google Calendar: ${cal.googleShort}` : null,
         manage,
       );
     }
