@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { connection } from "next/server";
-import { PrivacyNotice, WhatsAppButton } from "@/components/site";
+import { PrivacyNotice } from "@/components/site";
 import { getTenant } from "@/server/repo/tenant";
 
 export default async function TurnosLayout({ children }: LayoutProps<"/turnos">) {
@@ -20,7 +20,6 @@ export default async function TurnosLayout({ children }: LayoutProps<"/turnos">)
       <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8">{children}</main>
       <footer className="border-t border-line bg-sand/50">
         <div className="mx-auto max-w-2xl space-y-4 px-4 py-8">
-          <WhatsAppButton number={tenant.whatsappNumber} />
           <p className="text-sm text-muted">{tenant.publicZone}</p>
           <PrivacyNotice />
         </div>

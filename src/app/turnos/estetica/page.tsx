@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { WhatsAppButton } from "@/components/site";
 import { PageTitle } from "@/components/ui";
 import { arDateStr } from "@/lib/domain/time";
 import { listServices } from "@/server/repo/services";
@@ -30,6 +31,11 @@ export default async function EsteticaPage() {
         policy={tenant.policies.skincare}
         today={arDateStr(new Date())}
       />
+
+      <div className="space-y-2">
+        <p className="text-[15px] text-muted">¿Tenés dudas?</p>
+        <WhatsAppButton number={tenant.whatsappNumber} />
+      </div>
     </div>
   );
 }

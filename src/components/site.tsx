@@ -4,7 +4,7 @@ import { cx } from "./ui";
 export function WhatsAppButton({
   number,
   text,
-  label = "Escribinos por WhatsApp",
+  label = "Escribime por WhatsApp",
   className,
 }: {
   number: string;
@@ -34,7 +34,7 @@ export function PrivacyNotice({ className }: { className?: string }) {
   return (
     <p className={cx("text-xs leading-relaxed text-muted", className)}>
       Usamos tus datos (nombre, WhatsApp y email) solo para gestionar tu reserva y enviarte avisos sobre ella. No los compartimos con
-      terceros. Podés pedir acceso, rectificación o supresión escribiéndonos por WhatsApp (Ley 25.326 de Protección de Datos Personales).
+      terceros. Podés pedir acceso, rectificación o supresión escribiéndome por WhatsApp (Ley 25.326 de Protección de Datos Personales).
     </p>
   );
 }

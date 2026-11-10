@@ -64,8 +64,8 @@ export default async function TurnosPage() {
             menos, la seña no se reintegra.
           </li>
           <li>
-            <strong>Maquillaje:</strong> seña del {tenant.makeup.depositPercent} % del servicio, una vez que Thalia confirma la fecha.
-            La seña no se reintegra.
+            <strong>Maquillaje:</strong> seña del {tenant.makeup.depositPercent} % del servicio, una vez coordinada la fecha. La seña no
+            se reintegra.
           </li>
           <li>El estudio no tiene sala de espera y los turnos empiezan puntuales.</li>
         </ul>

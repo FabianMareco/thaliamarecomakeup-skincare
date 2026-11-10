@@ -131,7 +131,7 @@ export function ManageActions({
       {mode === "forfeit" && (
         <Card className="space-y-4">
           <Alert tone="warn" title="La seña no se reintegra">
-            Faltan menos de {windowHours} hs para tu turno. Si cancelás ahora, perdés la seña de {depositLabel}. Si preferís, escribinos por
+            Faltan menos de {windowHours} hs para tu turno. Si cancelás ahora, perdés la seña de {depositLabel}. Si preferís, escribime por
             WhatsApp.
           </Alert>
           <div className="flex gap-3">

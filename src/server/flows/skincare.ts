@@ -73,7 +73,7 @@ export async function createSkincareBooking(
     const sameDay = cfg.sameDayRequiresApproval && isSameDay(slot.date, now);
     const approvalUntil = sameDay ? approvalDeadline(now, slot.startAt, cfg.sameDayApprovalTimeoutMinutes) : undefined;
     if (approvalUntil && approvalUntil.getTime() <= now.getTime()) {
-      throw new UserError("Ese turno empieza muy pronto para reservarlo online. Escribinos por WhatsApp.");
+      throw new UserError("Ese turno empieza muy pronto para reservarlo online. Escribime por WhatsApp.");
     }
     const uploadDeadline = sameDay ? undefined : new Date(now.getTime() + cfg.receiptUploadMinutes * 60_000);
     const status = sameDay ? "awaiting_approval" : "awaiting_payment";

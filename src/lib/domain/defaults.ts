@@ -52,7 +52,7 @@ export const DEFAULT_TENANT: Tenant = {
     skincare:
       "Para reservar se abona una seña de $20.000 por transferencia. Si cancelás o reprogramás con 48 hs o más de anticipación, podés elegir el reintegro de la seña o reprogramar. Con menos de 48 hs, la seña no se reintegra. El saldo se abona en el turno. El estudio no tiene sala de espera y los turnos empiezan puntuales.",
     makeup:
-      "Para reservar la fecha se abona una seña del 50 % del servicio por transferencia, una vez que Thalia confirma la disponibilidad. La seña no se reintegra. El saldo (y el viático, si es a domicilio) se abona el día del evento.",
+      "Seña del 50 % del servicio por transferencia, una vez coordinada la fecha. La seña no se reintegra. El saldo (y el viático, si es a domicilio) se abona el día del evento.",
   },
 };
 
