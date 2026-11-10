@@ -31,7 +31,7 @@ Todo acceso a datos es del lado del servidor (Admin SDK). Las reglas de Firestor
 
 ## Desarrollo local (con emuladores)
 
-Requiere Node 20+ y Java (para los emuladores de Firebase).
+Requiere Node 22+ (lo exige firebase-admin) y Java (para los emuladores de Firebase).
 
 ```bash
 npm install
@@ -54,13 +54,14 @@ npm run lint && npm run typecheck
 
 1. Proyecto de Firebase con Firestore y Auth (proveedor email/contraseña). Funciona en el plan gratis (Spark). Publicar reglas: `npx firebase deploy --only firestore:rules --project <id>`.
 2. Cuenta de servicio → `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`.
-3. Variables de `.env.example` en Vercel, más **`LINK_SECRET`** (cadena aleatoria larga; ver abajo).
-4. Resend con el dominio `thaliamarecomakeup.com.ar` verificado → `RESEND_API_KEY`.
-5. `npm run seed` apuntando a producción (con `SEED_PRIVATE_ADDRESS` y `SEED_NOTIFICATION_EMAIL`) y `npm run create-admin`.
-6. **Cron cada 15 minutos.** Vercel Hobby solo permite crons diarios. Opciones:
+3. En Vercel, **Node.js Version 22.x** (también queda fijado en `package.json`, campo `engines`). Con Node 20 falla al cargar firebase-admin (`ERR_REQUIRE_ESM`).
+4. Variables de `.env.example` en Vercel, más **`LINK_SECRET`** (cadena aleatoria larga; ver abajo).
+5. Email: Gmail con contraseña de aplicación (`SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`) o, con dominio propio verificado, Resend (`RESEND_API_KEY`).
+6. `npm run seed` apuntando a producción (con `SEED_PRIVATE_ADDRESS` y `SEED_NOTIFICATION_EMAIL`) y `npm run create-admin`.
+7. **Cron cada 15 minutos.** Vercel Hobby solo permite crons diarios. Opciones:
    - Vercel Pro: agregar `vercel.json` con `{"crons":[{"path":"/api/cron/tick","schedule":"*/15 * * * *"}]}` (Vercel manda `CRON_SECRET` solo).
    - Programador externo (ej. cron-job.org): `GET https://<dominio>/api/cron/tick` con header `Authorization: Bearer <CRON_SECRET>`.
-7. WhatsApp: mientras Meta no apruebe el número y las plantillas, dejar `WHATSAPP_MODE=disabled` (solo se registra en el log; los emails incluyen botón de WhatsApp). La guía completa y las plantillas a dar de alta (Utility, `es_AR`) están en [`docs/whatsapp.md`](docs/whatsapp.md).
+8. WhatsApp: mientras Meta no apruebe el número y las plantillas, dejar `WHATSAPP_MODE=disabled` (solo se registra en el log; los emails incluyen botón de WhatsApp). La guía completa y las plantillas a dar de alta (Utility, `es_AR`) están en [`docs/whatsapp.md`](docs/whatsapp.md).
 
 ### Imágenes del panel
 
