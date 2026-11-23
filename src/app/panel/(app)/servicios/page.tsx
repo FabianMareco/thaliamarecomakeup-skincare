@@ -1,9 +1,11 @@
 import { listServices } from "@/server/repo/services";
 import { ServicesEditor } from "./ServicesEditor";
+import { requireAdmin } from "@/server/auth";
 
 export const metadata = { title: "Servicios" };
 
 export default async function ServiciosPage() {
+  await requireAdmin();
   const services = await listServices();
   return (
     <div className="space-y-6">

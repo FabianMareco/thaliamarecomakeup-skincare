@@ -1,3 +1,5 @@
+import "server-only";
+
 // Variables de entorno del servidor (sección 15). Se leen en cada acceso para
 // que los tests puedan ajustarlas.
 

@@ -6,6 +6,7 @@ import { pendingLists, upcomingConfirmed } from "@/server/panel";
 import { getTenant } from "@/server/repo/tenant";
 import { ReceiptActions, RefundDoneButton, SameDayActions } from "../_components/actions";
 import { BookingRow, money, ReceiptPreview, whenShort } from "../_components/bits";
+import { requireAdmin } from "@/server/auth";
 
 export const metadata = { title: "Pendientes" };
 
@@ -21,6 +22,7 @@ function Section({ title, count, children }: { title: string; count: number; chi
 }
 
 export default async function PendientesPage() {
+  await requireAdmin();
   const [l, upcoming, tenant] = await Promise.all([pendingLists(), upcomingConfirmed(48), getTenant()]);
   return (
     <div className="space-y-10">

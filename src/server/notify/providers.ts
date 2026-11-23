@@ -5,6 +5,18 @@ import { env } from "../env";
 // Proveedores de envío. Si no hay credenciales, quedan en modo "disabled":
 // no envían y el resultado queda registrado como `skipped` en el log.
 
+/** Para los logs: nunca el email o el teléfono completos (son datos personales). */
+export function maskEmail(email: string): string {
+  const [user, domain] = email.split("@");
+  if (!domain) return "***";
+  return `${user.slice(0, 1)}***@${domain}`;
+}
+
+export function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length <= 4 ? "***" : `***${digits.slice(-4)}`;
+}
+
 export type SendResult = { status: "sent" | "skipped" | "failed"; id?: string; error?: string };
 
 export type EmailAttachment = { filename: string; content: string; contentType: string };
@@ -57,7 +69,7 @@ class SmtpEmail implements EmailProvider {
 
 class LogEmail implements EmailProvider {
   async send(msg: { to: string; subject: string }): Promise<SendResult> {
-    if (process.env.NODE_ENV !== "test") console.info(`[email:disabled] → ${msg.to}: ${msg.subject}`);
+    if (process.env.NODE_ENV !== "test") console.info(`[email:disabled] → ${maskEmail(msg.to)}: ${msg.subject}`);
     return { status: "skipped", error: "Email no configurado (RESEND_API_KEY o SMTP_USER/SMTP_PASS)" };
   }
 }
@@ -95,7 +107,7 @@ class CloudApiWhatsApp implements WhatsAppProvider {
 class DisabledWhatsApp implements WhatsAppProvider {
   readonly mode = "disabled" as const;
   async sendTemplate(msg: { to: string; template: string }): Promise<SendResult> {
-    if (process.env.NODE_ENV !== "test") console.info(`[whatsapp:disabled] → ${msg.to}: ${msg.template}`);
+    if (process.env.NODE_ENV !== "test") console.info(`[whatsapp:disabled] → ${maskPhone(msg.to)}: ${msg.template}`);
     return { status: "skipped", error: "WHATSAPP_MODE=disabled" };
   }
 }

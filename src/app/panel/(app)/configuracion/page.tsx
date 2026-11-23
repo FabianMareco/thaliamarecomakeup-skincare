@@ -7,7 +7,8 @@ import { ConfigForm } from "./ConfigForm";
 export const metadata = { title: "Configuración" };
 
 export default async function ConfiguracionPage() {
-  const [t, admin] = await Promise.all([getTenant(), requireAdmin()]);
+  const admin = await requireAdmin();
+  const t = await getTenant();
   return (
     <div className="space-y-6">
       <h1 className="font-display text-2xl">Configuración</h1>

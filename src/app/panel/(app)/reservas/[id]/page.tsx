@@ -24,6 +24,7 @@ import {
   RescheduleForm,
   ResendButtons,
 } from "./DetailActions";
+import { requireAdmin } from "@/server/auth";
 
 export const metadata = { title: "Reserva" };
 
@@ -33,6 +34,7 @@ function isUpcoming(startAt?: Date): boolean {
 }
 
 export default async function ReservaPage(props: PageProps<"/panel/reservas/[id]">) {
+  await requireAdmin();
   const { id } = await props.params;
   const b = await getBooking(id);
   if (!b) notFound();

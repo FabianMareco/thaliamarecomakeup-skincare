@@ -3,12 +3,14 @@ import { toneFor } from "@/components/palette";
 import { Badge, Input } from "@/components/ui";
 import { fmtDateShort } from "@/lib/domain/time";
 import { listClients } from "@/server/repo/bookings";
+import { requireAdmin } from "@/server/auth";
 
 export const metadata = { title: "Pacientes" };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 export default async function PacientesPage(props: PageProps<"/panel/pacientes">) {
+  await requireAdmin();
   const sp = await props.searchParams;
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const all = await listClients();
