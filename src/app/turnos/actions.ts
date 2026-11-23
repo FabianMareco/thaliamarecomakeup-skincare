@@ -19,6 +19,18 @@ async function limit(scope: string, max: number, windowSeconds: number) {
   return hashIp(ip);
 }
 
+/**
+ * Tope por destinatario: cada reserva o solicitud manda emails y mensajes a los datos
+ * que escribe la persona, así que limitamos por email y por teléfono (no solo por IP)
+ * para que el formulario no sirva para mandarle spam a alguien desde otras IPs.
+ */
+async function limitRecipient(scope: string, input: { email?: unknown; phone?: unknown }, max: number) {
+  const email = String(input?.email ?? "").trim().toLowerCase();
+  const phone = String(input?.phone ?? "").replace(/\D/g, "").slice(-10);
+  if (email) await rateLimit(`${scope}:email:${email}`, max, 86400);
+  if (phone.length >= 6) await rateLimit(`${scope}:phone:${phone}`, max, 86400);
+}
+
 export async function fetchAvailability(serviceId: string): Promise<ActionResult<{ days: AvailabilityDay[]; today: string }>> {
   return toResult(async () => {
     await limit("availability", 120, 600);
@@ -31,6 +43,7 @@ export async function bookSkincare(input: SkincareBookingInput): Promise<ActionR
   return toResult(async () => {
     if (input?.website) throw new UserError("No se pudo procesar la reserva.");
     const ipHash = await limit("book", 10, 3600);
+    await limitRecipient("book-to", input, 4);
     const r = await createSkincareBooking(input, { ipHash });
     return { token: r.token };
   });
@@ -40,6 +53,7 @@ export async function requestMakeup(input: MakeupRequestInput): Promise<ActionRe
   return toResult(async () => {
     if (input?.website) throw new UserError("No se pudo procesar la solicitud.");
     const ipHash = await limit("makeup", 5, 3600);
+    await limitRecipient("makeup-to", input, 3);
     const r = await createMakeupRequest(input, { ipHash });
     return { token: r.token };
   });
