@@ -3,6 +3,7 @@ import { AGENDA_TONES } from "@/components/palette";
 import { cx } from "@/components/ui";
 import { addDaysStr, arDateStr, fmtDateStrLong, isValidDateStr, mondayOf } from "@/lib/domain/time";
 import { agenda, type AgendaItem } from "@/server/panel";
+import { requireAdmin } from "@/server/auth";
 
 export const metadata = { title: "Agenda" };
 
@@ -50,6 +51,7 @@ function Item({ item }: { item: AgendaItem }) {
 }
 
 export default async function AgendaPage(props: PageProps<"/panel/agenda">) {
+  await requireAdmin();
   const sp = await props.searchParams;
   const today = arDateStr(new Date());
   const date = typeof sp.date === "string" && isValidDateStr(sp.date) ? sp.date : today;

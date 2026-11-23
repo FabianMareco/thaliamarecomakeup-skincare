@@ -6,10 +6,12 @@ import { listServices } from "@/server/repo/services";
 import { getTenant } from "@/server/repo/tenant";
 import { DateJump, DayEditor, GeneratePanel, TemplateEditor } from "./ScheduleEditors";
 import { ShareImage } from "./ShareImage";
+import { requireAdmin } from "@/server/auth";
 
 export const metadata = { title: "Horarios" };
 
 export default async function HorariosPage(props: PageProps<"/panel/horarios">) {
+  await requireAdmin();
   const sp = await props.searchParams;
   const today = arDateStr(new Date());
   const date = typeof sp.date === "string" && isValidDateStr(sp.date) ? sp.date : today;
