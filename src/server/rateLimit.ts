@@ -27,7 +27,11 @@ export async function rateLimit(key: string, max: number, windowSeconds: number,
     tx.update(ref, { count: data.count + 1 });
     return true;
   });
-  if (!allowed) throw new RateLimitError();
+  if (!allowed) {
+    // Solo el tipo de límite: la clave incluye IP, email o teléfono (datos personales).
+    console.warn(`[rate-limit] superado: ${key.split(":")[0]}`);
+    throw new RateLimitError();
+  }
 }
 
 /** IP de la request (Vercel la pone en x-forwarded-for). */

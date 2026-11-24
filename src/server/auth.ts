@@ -48,7 +48,11 @@ export const getAdmin = cache(async (): Promise<AdminUser | null> => {
   const cookie = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!cookie) return null;
   const decoded = await adminAuth().verifySessionCookie(cookie, true).catch(() => null);
-  if (!decoded || !isAllowedUid(decoded.uid)) return null;
+  if (!decoded) return null;
+  if (!isAllowedUid(decoded.uid)) {
+    console.warn("[auth] sesión válida de una cuenta sin acceso al panel");
+    return null;
+  }
   return { uid: decoded.uid, email: decoded.email };
 });
 
@@ -62,6 +66,9 @@ export async function requireAdmin(): Promise<AdminUser> {
 /** Para acciones del panel: falla si no hay sesión válida. */
 export async function assertAdmin(): Promise<AdminUser> {
   const admin = await getAdmin();
-  if (!admin) throw new UserError("Tu sesión venció. Volvé a iniciar sesión.");
+  if (!admin) {
+    console.warn("[auth] acción del panel rechazada: sin sesión válida");
+    throw new UserError("Tu sesión venció. Volvé a iniciar sesión.");
+  }
   return admin;
 }

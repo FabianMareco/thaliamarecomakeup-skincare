@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { MAX_RECEIPT_BYTES } from "@/lib/domain/receipts";
 import { toResult, UserError } from "@/server/errors";
 import { uploadReceipt } from "@/server/flows/receipts";
-import { clientIp, rateLimit } from "@/server/rateLimit";
+import { clientIp, rateLimit, RateLimitError } from "@/server/rateLimit";
 
 // Carga del comprobante (sección 10.1). El archivo pasa por el servidor, que
 // valida su tipo real y lo guarda en el bucket privado.
@@ -24,5 +24,7 @@ export async function POST(req: Request) {
     await uploadReceipt(token, new Uint8Array(await file.arrayBuffer()), payerName);
     return undefined;
   });
-  return NextResponse.json(result, { status: result.ok ? 200 : 400 });
+  // 429 cuando se superó el límite de intentos, para que se distinga en los logs.
+  const limited = !result.ok && result.error === new RateLimitError().message;
+  return NextResponse.json(result, { status: result.ok ? 200 : limited ? 429 : 400 });
 }
