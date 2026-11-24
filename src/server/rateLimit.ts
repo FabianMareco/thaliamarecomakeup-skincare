@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { cols, revive } from "./db";
 import { db } from "./firebase";
+import { securityEvent } from "./securityLog";
 
 // Rate limit básico de ventana fija, guardado en Firestore para que funcione
 // entre instancias serverless.
@@ -29,7 +30,7 @@ export async function rateLimit(key: string, max: number, windowSeconds: number,
   });
   if (!allowed) {
     // Solo el tipo de límite: la clave incluye IP, email o teléfono (datos personales).
-    console.warn(`[rate-limit] superado: ${key.split(":")[0]}`);
+    securityEvent(`Límite de intentos superado: ${key.split(":")[0]}`);
     throw new RateLimitError();
   }
 }

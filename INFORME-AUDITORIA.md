@@ -49,10 +49,10 @@ Estados: ✅ Ya estaba bien · 🔧 Arreglado · ⚠️ Pendiente manual · ➖ 
 | 19 | Spam y abuso de formularios | 🔧 | Ya había honeypot, límite por IP y una sola reserva pendiente por persona en faciales. Maquillaje no tenía tope por destinatario. | Tope diario por email y teléfono (4 reservas, 3 solicitudes). Probado: la cuarta solicitud al mismo email se bloquea. | `src/app/turnos/actions.ts` |
 | 20 | Pagos (transferencia) | ✅ | Montos desde la base. Probado: precio, seña y estado inyectados se ignoran. Solo el panel verifica señas. | — | — |
 | 21 | HTTPS y HSTS | 🔧 | Vercel fuerza HTTPS. | HSTS explícito de 2 años. | `next.config.ts` |
-| 22 | Cabeceras de seguridad | 🔧 / ⚠️ | No había ninguna. | nosniff, anti-iframe, Referrer-Policy, Permissions-Policy, COOP, sin X-Powered-By. CSP básica obligatoria y CSP completa en report-only (0 avisos en local con login real). | `next.config.ts` |
+| 22 | Cabeceras de seguridad | 🔧 | No había ninguna. | nosniff, anti-iframe, Referrer-Policy, Permissions-Policy, COOP, sin X-Powered-By. CSP completa: primero en report-only; el 24/11 Fabián confirmó en producción que el login no genera avisos y pasó a obligatoria. El valor de `authDomain` se limpia antes de usarse. | `next.config.ts` |
 | 23 | CORS | ✅ | Sin cabeceras CORS: ningún otro sitio puede llamar la API desde el navegador. | — | — |
 | 24 | Límite de peticiones | ✅ / 🔧 | En Firestore, válido entre instancias. | La subida de comprobantes responde 429 al superar el límite. | `src/app/api/turnos/comprobante/route.ts` |
-| 25 | Registro y vigilancia | 🔧 / ⚠️ | No se registraban accesos rechazados. | Logs sin datos personales para acciones del panel sin sesión, cuentas sin acceso y límites superados. Alertas: pendiente manual. | `src/server/auth.ts`, `src/server/rateLimit.ts` |
+| 25 | Registro y vigilancia | 🔧 / ⚠️ | No se registraban accesos rechazados. | Logs sin datos personales para acciones del panel sin sesión, cuentas sin acceso y límites superados. Sentry integrado (errores del servidor y del navegador, más esos eventos como avisos), sin datos personales y con túnel por el propio dominio. Falta cargar el DSN (pendiente manual). | `src/server/securityLog.ts`, `src/instrumentation*.ts`, `src/lib/sentry-scrub.ts` |
 | 26 | Dependencias vulnerables | 🔧 / ⚠️ | Había 33 avisos (4 altos) y Next.js cortaba el build. | Next.js 16.4.6, `npm audit fix` sin cambios de versión mayor, override de `@grpc/grpc-js`: 0 altos. Quedan 8 moderados en producción (cadena de `firebase-admin` 13, riesgo aceptado) y 11 en herramientas de desarrollo. | `package.json`, `package-lock.json` |
 | 27 | Paquetes sin uso | ✅ / 🔧 | Ninguno sobrante. `@next/env` se usaba sin declarar. | Declarado como devDependency. | `package.json` |
 
@@ -76,11 +76,12 @@ Verificación final: lint y tipos sin errores, 54 tests unitarios, 41 de integra
 
 ## Pendientes manuales
 
-1. **Publicar el PR #5.** Fusionarlo en `main`; Vercel despliega solo. Corrige el hallazgo crítico.
+1. ~~Publicar el PR #5~~ Hecho: PR #5 (23/11) y PR #6 (24/11).
 2. **Revisar si alguien aprovechó el error.** En Vercel → proyecto → Logs, filtrar por `/panel/pacientes` y `/panel/reservas` con respuesta 307 en fechas anteriores al deploy. Si aparecen IPs desconocidas, consultarlo con un profesional por la Ley 25.326.
-3. **Activar la CSP completa.** Después del deploy, entrar al panel en la web real con la consola del navegador abierta (F12) e iniciar sesión. Si no aparece ningún aviso "Content Security Policy" / "Report Only", pasar la política completa de `Content-Security-Policy-Report-Only` a `Content-Security-Policy` en `next.config.ts`.
-4. **Alertas (opcional).** Para avisos de errores 5xx o accesos rechazados, integrar Sentry (plan gratuito), porque el plan Hobby de Vercel guarda pocos logs.
-5. **Volver a revisar `firebase-admin`.** Cuando salga una versión 14 compatible con Vercel, actualizar y correr `npm audit --omit=dev`.
+3. ~~Activar la CSP completa~~ Hecho el 24/11 (PR #7).
+4. **Corregir `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` en Vercel.** Tiene el valor con los símbolos de la plantilla (`<"…">`). Debe quedar `turnos-thalia.firebaseapp.com`, sin comillas ni `<>`, y luego redeploy.
+5. **Activar Sentry.** Crear el proyecto en sentry.io, cargar `NEXT_PUBLIC_SENTRY_DSN` en Vercel y configurar las alertas (pasos en el PR #7).
+6. **Volver a revisar `firebase-admin`.** Cuando salga una versión 14 compatible con Vercel, actualizar y correr `npm audit --omit=dev`.
 
 ## Claves a rotar
 
