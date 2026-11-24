@@ -4,6 +4,7 @@ import { cache } from "react";
 import { env } from "./env";
 import { UserError } from "./errors";
 import { adminAuth } from "./firebase";
+import { securityEvent } from "./securityLog";
 
 // Autenticación del panel: cookie de sesión de Firebase verificada en el
 // servidor, y solo para los UIDs de ADMIN_UIDS.
@@ -50,7 +51,7 @@ export const getAdmin = cache(async (): Promise<AdminUser | null> => {
   const decoded = await adminAuth().verifySessionCookie(cookie, true).catch(() => null);
   if (!decoded) return null;
   if (!isAllowedUid(decoded.uid)) {
-    console.warn("[auth] sesión válida de una cuenta sin acceso al panel");
+    securityEvent("Sesión válida de una cuenta sin acceso al panel");
     return null;
   }
   return { uid: decoded.uid, email: decoded.email };
@@ -67,7 +68,7 @@ export async function requireAdmin(): Promise<AdminUser> {
 export async function assertAdmin(): Promise<AdminUser> {
   const admin = await getAdmin();
   if (!admin) {
-    console.warn("[auth] acción del panel rechazada: sin sesión válida");
+    securityEvent("Acción del panel rechazada: sin sesión válida");
     throw new UserError("Tu sesión venció. Volvé a iniciar sesión.");
   }
   return admin;

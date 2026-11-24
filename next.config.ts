@@ -1,10 +1,14 @@
+import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV === "development";
 
 // Firebase Auth en el navegador (solo el login del panel): habla con las APIs de
 // Google y carga un iframe del authDomain. En local puede usar el emulador.
-const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN?.trim();
+// Se limpia el valor (comillas, <>, espacios) y solo se usa si es un dominio válido:
+// un error de tipeo en la variable de Vercel no debe romper la cabecera.
+const rawAuthDomain = (process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "").replace(/[<>"'\s]/g, "");
+const authDomain = /^[a-z0-9.-]+\.[a-z]{2,}$/i.test(rawAuthDomain) ? rawAuthDomain : undefined;
 const authEmulator = process.env.NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_HOST?.trim();
 const firebaseConnect = [
   "https://identitytoolkit.googleapis.com",
@@ -13,10 +17,11 @@ const firebaseConnect = [
   ...(authEmulator ? [`http://${authEmulator}`] : []),
 ];
 
-// Política completa, según la guía de CSP de Next.js ("Without Nonces").
-// Va primero en modo report-only: avisa en la consola del navegador sin bloquear,
-// para confirmar en producción que el login no se rompe antes de hacerla obligatoria.
-const fullCsp = [
+// Política según la guía de CSP de Next.js ("Without Nonces"). Estuvo en
+// report-only y se confirmó en producción que el login no genera avisos (24/11/2026).
+// Los avisos de Sentry del navegador van por el propio dominio (tunnel), así que
+// alcanza con connect-src 'self'.
+const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' https://apis.google.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
@@ -30,13 +35,8 @@ const fullCsp = [
   "frame-ancestors 'none'",
 ].join("; ");
 
-// Lo que no puede romper nada se aplica ya: sin iframes de terceros que nos
-// enmarquen, sin plugins, sin <base> ajeno y formularios solo hacia el propio sitio.
-const enforcedCsp = ["object-src 'none'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'"].join("; ");
-
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: enforcedCsp },
-  { key: "Content-Security-Policy-Report-Only", value: fullCsp },
+  { key: "Content-Security-Policy", value: csp },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -65,4 +65,9 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry: sin subir source maps (no hay token) y sin generarlos públicos.
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  telemetry: false,
+  sourcemaps: { disable: true },
+});
